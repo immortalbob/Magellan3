@@ -2,7 +2,7 @@
 
 A 2026 rebuild of **Magellan 2** (Adam Wright, 2003) for **Decal 3** on the **End-of-Retail**
 Asheron's Call client: a places database, dungeon identification, on-screen coordinates, and a
-live dungeon automap generated from the client's own DAT geometry.
+live dungeon automap and breadcrumb trail generated from the client's own DAT geometry.
 
 The original was a native ATL/COM plugin that drew with GDI onto a device context Decal handed it.
 That device context, that DAT format, and that plugin contract are all gone. This is a clean
