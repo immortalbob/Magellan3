@@ -83,7 +83,7 @@ floor-outline seam-cancellation against a two-cell room that must read as one ou
    - `places.xml`, `dungeon_names.tsv`, `places_2.0.0.2.xml` — the places, dungeon-name, and routing data
 2. Put **all of those files together** in one folder (e.g. `C:\Games\Magellan3\`). They must sit
    side by side — the plugin loads the data files from beside the DLL, and won't work with just the DLL.
-3. Register the plugin with Decal.
+3. Register the plugin (magellan3.dll) with Decal.
 4. Enable **Magellan 3** in Decal's plugin list, then launch AC.
 5. The Magellan window opens from its icon in the VVS bar. Search a place, enter a dungeon to see
    the automap, or run `/mag diag` to check status.
