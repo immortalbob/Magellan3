@@ -147,7 +147,7 @@ window proved unstable on the current client).
 ## Credits
 
 - **Adam Wright** — Magellan 2 (2003): the original places database, window, and automap algorithm.
-- **Immortalbob** — the 2026 resurrection: reverse-engineering the 2003 binary and rebuilding the
+- **ACCPP (Immortalbob)** — the 2026 resurrection: reverse-engineering the 2003 binary and rebuilding the
   whole plugin on the modern Decal 3 / End-of-Retail managed stack.
 - **Chorizite** — `DatReaderWriter` (MIT): the DAT parsing.
 - **DungeonViewer** authors — `dungeons.dvp` (653 dungeon names) and the DM→ToD format deltas, used
