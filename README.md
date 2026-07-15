@@ -70,7 +70,7 @@ floor-outline seam-cancellation against a two-cell room that must read as one ou
 **Prerequisites** (install these first — Magellan does not bundle them):
 
 - **Asheron's Call**, an **End-of-Retail** client (the automap reads its `client_cell_1.dat`).
-- **Decal 3** — the plugin framework.
+- **Decal 3** (2.9.8.3) — the plugin framework.
 - **VirindiViewService (VVS)** — the UI/drawing toolkit the map and window use.
 
 **Then install Magellan 3:**
