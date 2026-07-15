@@ -9,6 +9,9 @@ That device context, that DAT format, and that plugin contract are all gone. Thi
 reimplementation on the modern managed stack — but it starts from the original's data, window, and
 algorithm, all recovered from the 2003 binary and verified against independent sources.
 
+![Screenshot](images/magellan3.png)
+
+
 ## Why it exists
 
 GoArrow already does places and dungeon maps — but its dungeon maps are raster images downloaded
