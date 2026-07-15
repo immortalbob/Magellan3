@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Offline test runner for the pure logic half. No package dependencies on purpose, so it runs
+    anywhere (Linux CI included). `dotnet run` executes the suite; exit code 0 == all green.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Magellan.Tests</RootNamespace>
+    <AssemblyName>Magellan3.Tests</AssemblyName>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Magellan3.Core\Magellan3.Core.csproj" />
+  </ItemGroup>
+</Project>

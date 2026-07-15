@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- netstandard2.0 so the net48 plugin AND the modern test runner can both consume it. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <RootNamespace>Magellan</RootNamespace>
+    <AssemblyName>Magellan3.Core</AssemblyName>
+    <!--
+      Doc-generation intentionally OFF: the /// comments are prose (they contain -> and & and <
+      which are not valid XML), and this project is a leaf library, not a published API surface.
+      Turning it on makes the compiler parse those comments as XML and reject them.
+    -->
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,72 @@
+<?xml version="1.0" ?>
+<view icon="9310" title="Magellan 3" width="270" height="360">
+  <control progid="DecalControls.FixedLayout">
+    <control progid="DecalControls.StaticText" left="5" top="3" width="255" height="16" text="Coords: (log in)" name="txtCoordReadout" textcolor="16776960"/>
+    <control progid="DecalControls.Notebook" name="nbPages" left="0" top="22" width="270" height="316">
+      <page label="Search">
+        <control progid="DecalControls.FixedLayout">
+          <control name="txtQuery" progid="DecalControls.Edit" left="5" top="5" width="175" height="18" imageportalsrc="4520" textcolor="16777215"/>
+          <control name="btnFind" progid="DecalControls.PushButton" left="185" top="4" width="60" height="20" text="Find"/>
+          <control progid="DecalControls.List" name="lstResults" left="5" top="30" width="248" height="245">
+            <column progid="DecalControls.IconColumn"/>
+            <column progid="DecalControls.TextColumn" fixedwidth="150"/>
+            <column progid="DecalControls.TextColumn"/>
+          </control>
+        </control>
+      </page>
+      <page label="Nearby">
+        <control progid="DecalControls.FixedLayout">
+          <control name="txtStatic" progid="DecalControls.StaticText" left="5" top="7" width="50" height="18" text="Radius :"/>
+          <control name="txtProxQuery" progid="DecalControls.Edit" left="55" top="5" width="60" height="18" imageportalsrc="4520" textcolor="16777215"/>
+          <control name="btnProxFind" progid="DecalControls.PushButton" left="185" top="4" width="60" height="20" text="Find"/>
+          <control progid="DecalControls.List" name="lstProxResults" left="5" top="30" width="248" height="245">
+            <column progid="DecalControls.IconColumn"/>
+            <column progid="DecalControls.TextColumn" fixedwidth="150"/>
+            <column progid="DecalControls.TextColumn"/>
+          </control>
+        </control>
+      </page>
+      <page label="More Details">
+        <control progid="DecalControls.FixedLayout">
+          <control progid="DecalControls.StaticText" left="5" top="5" width="240" height="36" text="No results" name="txtInfo"/>
+          <control progid="DecalControls.StaticText" left="5" top="45" width="240" height="18" text="" name="txtLoc"/>
+          <control progid="DecalControls.StaticText" left="5" top="66" width="240" height="18" text="" name="txtType"/>
+          <control progid="DecalControls.StaticText" left="5" top="82" width="240" height="18" text="" name="txtRestriction"/>
+          <control progid="DecalControls.StaticText" left="5" top="113" width="240" height="150" text="" name="txtNotes"/>
+        </control>
+      </page>
+      <page label="Route">
+        <control progid="DecalControls.FixedLayout">
+          <control progid="DecalControls.StaticText" left="5" top="5" width="70" height="18" text="Start :" name="txtRouteStartLbl"/>
+          <control progid="DecalControls.StaticText" left="70" top="5" width="185" height="18" text="(set from a search result)" name="txtRouteStart"/>
+          <control progid="DecalControls.StaticText" left="5" top="27" width="70" height="18" text="Dest :" name="txtRouteEndLbl"/>
+          <control progid="DecalControls.StaticText" left="70" top="27" width="185" height="18" text="(set from a search result)" name="txtRouteEnd"/>
+          <control name="btnSetRouteSelf" progid="DecalControls.PushButton" left="5" top="49" width="120" height="20" text="Start = my location"/>
+          <control name="btnPlanRoute" progid="DecalControls.PushButton" left="130" top="49" width="80" height="20" text="Plan Route"/>
+          <control progid="DecalControls.List" name="lstRouteResults" left="5" top="75" width="248" height="200">
+            <column progid="DecalControls.IconColumn"/>
+            <column progid="DecalControls.TextColumn" fixedwidth="60"/>
+            <column progid="DecalControls.TextColumn"/>
+          </control>
+        </control>
+      </page>
+      <page label="Options">
+        <control progid="DecalControls.FixedLayout">
+          <control progid="DecalControls.CheckBox" left="5" top="5" width="240" height="20" text="Show map" name="chkShowMap"/>
+          <control progid="DecalControls.CheckBox" left="5" top="27" width="240" height="20" text="Shadow footsteps" name="chkFootsteps"/>
+          <control progid="DecalControls.CheckBox" left="5" top="49" width="240" height="20" text="Lock map rotation" name="chkLockRotation"/>
+        </control>
+      </page>
+      <page label="About">
+        <control progid="DecalControls.FixedLayout">
+          <control progid="DecalControls.StaticText" left="5" top="5" width="250" height="20" text="Magellan 3" name="txtAboutTitle" textcolor="16776960"/>
+          <control progid="DecalControls.StaticText" left="5" top="28" width="250" height="34" text="A dungeon mapper, places database, and route finder for Asheron's Call." name="txtAboutDesc"/>
+          <control progid="DecalControls.StaticText" left="5" top="70" width="250" height="18" text="Original Magellan 2 by Adam Wright (2003)." name="txtAboutOrig"/>
+          <control progid="DecalControls.StaticText" left="5" top="90" width="250" height="34" text="Resurrected and rebuilt for the modern Decal 3 / End-of-Retail client by Immortalbob." name="txtAboutAuthor"/>
+          <control progid="DecalControls.StaticText" left="5" top="130" width="250" height="18" text="Places: 3,307   Dungeon names: 653" name="txtAboutStats"/>
+          <control progid="DecalControls.StaticText" left="5" top="152" width="250" height="34" text="Automap, search, nearby, dungeon ID, relative coords, and routing." name="txtAboutFeatures"/>
+        </control>
+      </page>
+    </control>
+  </control>
+</view>

@@ -1,0 +1,654 @@
+landblock	name	source	magellan_variant
+0x0003	Niffis Fighting Pits	dvp	
+0x0004	Northern Power Forge	dvp	
+0x000B	Banderling Shrine	dvp	
+0x00F2	King 6 Browerk - Part 2	dvp	
+0x00F3	King 6 Browerk - Part 5 & 6	dvp	
+0x00F4	King 5 Rehir - Part 4	dvp	
+0x00F5	King 1 Reeshan - Part 4	dvp	
+0x00F6	King 2 Kiree - Part 4	dvp	
+0x00F7	King 4 Keerik - Part 4	dvp	
+0x00F8	King 3 Broodu - Part 4	dvp	
+0x00F9	King 6 Browerk - Part 3	dvp	
+0x00FA	King 5 Rehir - Part 1	dvp	
+0x00FB	King 1 Reeshan - Part 1	dvp	
+0x00FC	King 2 Kiree - Part 1	dvp	
+0x00FD	King 4 Keerik - Part 1	dvp	
+0x00FE	King 3 Broodu - Part 1	dvp	
+0x0100	Murk Warrens	dvp	
+0x0101	Murk Warrens	dvp	
+0x0102	Murk Warrens	dvp	
+0x0103	Black Spawn Den	dvp	
+0x0104	Black Spawn Den	dvp	
+0x0105	Black Spawn Den	dvp	
+0x0106	Setab's Barracks	dvp	
+0x0107	Nor's Folly	dvp	
+0x0108	Cursed Swamp	dvp	
+0x0109	Dungeon of Corpses	dvp	
+0x010A	Black Dominion	dvp	
+0x010B	Asuger Temple	dvp	
+0x010C	Mysterious Tunnels	dvp	
+0x010D	Contemplation Tower	dvp	
+0x010E	Contemplation Tower	dvp	
+0x010F	Contemplation Tower	dvp	
+0x0110	Nexus	dvp	
+0x0111	Sentinal Storage Dungeon	dvp	
+0x0112	Lyceum Training Grounds	dvp	
+0x0113	Amiantos Bethel	dvp	
+0x0115	Wedding Hall	dvp	
+0x0116	Tenkardunn Foundry	dvp	
+0x0117	Serac Vault	dvp	
+0x0119	Amperehelion Vault	dvp	
+0x011A	Incunabula Vault	dvp	
+0x011B	Jahannan Vault	dvp	
+0x011C	Mountain Fortress	dvp	
+0x011D	Al-Arqas Meeting Hall	dvp	
+0x011E	Al-Jalima Meeting Hall	dvp	
+0x011F	Arwic Meeting Hall	dvp	
+0x0120	Baishi Meeting Hall	dvp	
+0x0121	Cragstone Meeting Hall	dvp	
+0x0122	Eastham Meeting Hall	dvp	
+0x0123	Glenden Wood Meeting Hall	dvp	
+0x0124	Hebian-to Meeting Hall	dvp	
+0x0125	Holtburg Meeting Hall	dvp	
+0x0126	Khayaban Meeting Hall	dvp	
+0x0127	Lin Meeting Hall	dvp	
+0x0128	Lythelthorpe Meeting Hall	dvp	
+0x0129	Mayoi Meeting Hall	dvp	
+0x012A	Nanto Meeting Hall	dvp	
+0x012B	Qalaba'r Meeting Hall	dvp	
+0x012C	Rithwic Meeting Hall	dvp	
+0x012D	Samsur Meeting Hall	dvp	
+0x012E	Sawato Meeting Hall	dvp	
+0x012F	Shoushi Meeting Hall	dvp	
+0x0130	Tou-Tou Meeting Hall	dvp	
+0x0131	Tufa Meeting Hall	dvp	
+0x0132	Uziz Meeting Hall	dvp	
+0x0133	Yanshi Meeting Hall	dvp	
+0x0134	Yaraq Meeting Hall	dvp	
+0x0135	Zaikhal Meeting Hall	dvp	
+0x0136	Empyrean Foundry	dvp(+magellan variant)	Setab's Barracks
+0x0137	Artifex Vault	dvp	
+0x0138	Lost City of Frore	dvp	
+0x0139	Mage Academy	dvp	
+0x013B	Folthid Cellar	dvp	
+0x013C	Underground Forest	dvp	
+0x013D	Forbidden Crypt	dvp(+magellan variant)	Forbidden Crypts
+0x013E	Burial Temple	dvp	
+0x013F	Saadia's Retreat	dvp	
+0x0140	Virindi Fort	dvp	
+0x0141	Enkindled Souls	dvp	
+0x0142	Recovered Temple	dvp	
+0x0143	Phyntos Menace	dvp	
+0x0144	Darkened Halls	dvp	
+0x0145	Bone Lair	dvp	
+0x0146	Mount Lethe Magma Tubes	dvp	
+0x0147	Mount Naipenset Caverns	dvp	
+0x0148	A Small Ruin	dvp	
+0x0149	Thieves' Galleries	dvp	
+0x014A	Mysterious Cave	dvp	
+0x014B	Winthura's Garden	dvp	
+0x014C	Nevius Passage	dvp	
+0x014D	Damp Caverns	dvp	
+0x014E	Smuggler's Hideaway	dvp	
+0x014F	Dungeon Maggreth	dvp	
+0x0150	Filo's Doom	dvp	
+0x0151	Forgotten Temple	dvp	
+0x0152	Ruined Cave Outpost	dvp	
+0x0153	Shreth Hive	dvp	
+0x0154	Stone Cathedral	dvp	
+0x0155	Musansayn's Vault	dvp	
+0x0156	Sea Temple Catacombs	dvp	
+0x0157	Under-Cove Crypt	dvp	
+0x0158	Lytaway Dungeon	dvp(+magellan variant)	Lytaway
+0x0159	Abandoned Shops	dvp	
+0x015A	Dry Well	dvp	
+0x015B	Unfinished Temple	dvp	
+0x015C	Nanto Rat Lair	dvp	
+0x015D	Mountain Cavern	dvp	
+0x015E	Impious Temple	dvp	
+0x0160	King 1 Reeshan - Part 2	dvp	
+0x0161	Empyrean Garrison	dvp	
+0x0162	Cave of Alabree	dvp	
+0x0163	Holtburg Redoubt	dvp	
+0x0164	Lost Distillery	dvp	
+0x0165	Old Warehouse	dvp	
+0x0166	Deserted Ruin	dvp	
+0x0167	Desert Ruin	dvp	
+0x0168	Water Temple	dvp	
+0x0169	Mattekar Cave	dvp	
+0x016A	King 1 Reeshan - Part 3	dvp	
+0x016B	King 2 Kiree - Part 3	dvp	
+0x016D	Blackmire 5, Dungeon 1: Entrance	dvp	
+0x016F	Tutorial Dungeon (N Yaraq)	dvp	
+0x0170	Blackmire 5, Dungeon 2: Izji Qo's Test	dvp	
+0x0171	Tutorial Dungeon (S Yanshi)	dvp	
+0x0172	Tutorial Dungeon (N Yanshi)	dvp	
+0x0173	Blackmire 5, Dungeon 3: Izji Qo's Defenders	dvp	
+0x0174	Tutorial Dungeon (W Shoushi)	dvp	
+0x0175	Tutorial Dungeon (NW Samsur)	dvp	
+0x0176	Tutorial Dungeon (E Samsur)	dvp	
+0x0177	Mossy Cave	dvp	
+0x0178	Dark Mosswart Halls	dvp	
+0x0179	Tutorial Dungeon (N Nanto)	dvp	
+0x017A	Banderling Hovel	dvp	
+0x017B	Watery Grotto	dvp	
+0x017C	King Toad Idol	dvp	
+0x017D	Tutorial Dungeon (W Holtburg)	dvp	
+0x017E	Tutorial Dungeon (S Holtburg)	dvp	
+0x017F	Tutorial Dungeon (N Al-Arqas)	dvp	
+0x0180	Tutorial Dungeon (W Al-Arqas)	dvp	
+0x0181	Dungeon Nye	dvp	
+0x0182	Desert Mine	dvp	
+0x0183	Dungeon Binar	dvp	
+0x0184	Dungeon Mei	dvp	
+0x0185	Daiklos Dungeon	dvp	
+0x0186	Sclavus Keep	dvp	
+0x0187	A Ruin (Arwic)	dvp	
+0x0188	Mines of Despair	dvp	
+0x0189	Grievous Vault	dvp	
+0x018B	A Cave	dvp	
+0x018C	Crater Lair	dvp	
+0x018D	Olthoi Tunnels	dvp	
+0x018F	Carved Cave	dvp(+magellan variant)	Carved Caves
+0x0190	Old Mine	dvp	
+0x0191	Mountain Sewer	dvp	
+0x0192	Mountain Halls	dvp	
+0x0193	Knath Lair	dvp	
+0x0198	King 6 Browerk - Part 1A	dvp	
+0x019A	Crater Caves Dungeon	dvp	
+0x019B	Lightless Catacombs	dvp	
+0x019C	Swamp Temple	dvp	
+0x019D	Simple Tower	dvp	
+0x019E	Drudge Hideout	dvp	
+0x019F	Tumerok Post	dvp	
+0x01A0	Tumerok Dungeon	dvp	
+0x01A1	Tumerok Base	dvp	
+0x01A2	Swamp Temple	dvp	
+0x01A3	The Pit	dvp	
+0x01A4	Mite Tunnels	dvp	
+0x01A5	Inner Dungeon	dvp	
+0x01A6	Disaster Maze	dvp	
+0x01A7	Crater Pathway	dvp	
+0x01A8	Abandoned Arena	dvp	
+0x01A9	Ancient Lighthouse	dvp	
+0x01AA	Lair of Death	dvp	
+0x01AB	Forking Trail	dvp	
+0x01AC	Adventurer's Haven	dvp	
+0x01AD	Dungeon Gallery Tower	dvp	
+0x01AE	Colier Mine	dvp	
+0x01AF	Lakeside Lair	dvp	
+0x01B0	Seaside Lair	dvp	
+0x01B1	Lost Garden Ruins	dvp	
+0x01B2	Web Maze	dvp	
+0x01B3	Dungeon Fern	dvp	
+0x01B4	Golem Burial Ground	dvp	
+0x01B5	Rocky Crypt	dvp	
+0x01B6	Dungeon Muddy	dvp	
+0x01B7	Braid Mansion Ruin	dvp	
+0x01B8	A Ruin (Rithwic)	dvp	
+0x01B9	A Ruin (Samsur)	dvp	
+0x01BA	Dungeon of Tatters	dvp	
+0x01BB	Thief Trail	dvp	
+0x01BC	Tumerok Chamber	dvp	
+0x01BD	Cave	dvp	
+0x01BE	Tumerok Fortress	dvp	
+0x01BF	Tumerok Outpost	dvp	
+0x01C0	Small Complex	dvp	
+0x01C1	Tumerok Mine	dvp	
+0x01C2	Underground Passage	dvp(+magellan variant)	Witshire Dungeon
+0x01C3	Trialos	dvp	
+0x01C4	Thasali	dvp	
+0x01C5	Swamp Ruin	dvp	
+0x01C6	Hunter's Leap Dungeon	dvp	
+0x01C7	Lugian Outpost	dvp	
+0x01C8	Lugian Post	dvp	
+0x01C9	Abandoned Mine	dvp	
+0x01CA	Hebian-to Sewers	dvp	
+0x01CB	Tutorial Dungeon	dvp	
+0x01CC	Halls of the Helm	dvp	
+0x01CD	Rithwic Crypt	dvp	
+0x01CE	Hall of Lost Light	dvp	
+0x01CF	Eastham Sewers	dvp(+magellan variant)	Eastham Sewer
+0x01D0	Yanshi Tunnel	dvp	
+0x01D1	King 6 Browerk - Part 1C	dvp	
+0x01D2	Mountain Keep	dvp	
+0x01D3	Zabool Tower Base	dvp	
+0x01D4	Bellig Tower Base	dvp	
+0x01D5	Syliph Tower	dvp	
+0x01D6	Alfreth Dungeon	dvp	
+0x01D7	Sylsfear Dungeon	dvp	
+0x01D8	A Drudge Nest	dvp	
+0x01D9	A Red Rat Lair	dvp	
+0x01DA	A Ruin (Yanshi)	dvp	
+0x01DB	Moss Chamber	dvp	
+0x01DC	A Drudge Nest	dvp	
+0x01DD	A Rat Nest	dvp	
+0x01DE	A Ruin (Mayoi)	dvp	
+0x01DF	A Mosswart Nest	dvp	
+0x01E0	Banderling Ruin	dvp	
+0x01E1	Thieve's Den	dvp	
+0x01E2	Bandit Castle Prison	dvp	
+0x01E3	Glenden Wood Dungeon	dvp	
+0x01E4	North Glenden Prison	dvp	
+0x01E5	Green Mire Grave	dvp	
+0x01E6	Small Icecave	dvp	
+0x01E7	A Small Cave	dvp	
+0x01E8	Dungeon Manor	dvp	
+0x01E9	Underground City	dvp	
+0x01EA	Old Talisman Dungeon	dvp	
+0x01ED	Dungeon of Shadows	dvp	
+0x01EE	Black Death Catacombs (old ID)	dvp(+magellan variant)	Black Death Catacombs
+0x01EF	Arwic Mines	dvp	
+0x01F0	King 4 Keerik - Part 3	dvp	
+0x01F1	Cave	dvp	
+0x01F2	King 5 Rehir - Part 3	dvp	
+0x01F3	Tomb of the Dead	dvp	
+0x01F4	Lyceum Training Grounds	dvp	
+0x01F6	Holtburg Dungeon	dvp	
+0x01F7	Shoushi Grotto	dvp	
+0x01F8	Mite Maze	dvp	
+0x01F9	Accursed Halls	dvp	
+0x01FA	Crypt of Ashen Tears	dvp	
+0x01FB	Yaraq Tunnels	dvp	
+0x01FC	ReedShark Lair	dvp	
+0x01FD	Trothyr's Rest	dvp	
+0x022C	Oubliette	dvp	
+0x0272	Blackmire 4, Dungeon 1: Entrance	dvp	
+0x0273	Lesser Haven of Kivik Lir	dvp	
+0x0274	Haven of Kivik Lir	dvp	
+0x0275	Cragstone Reinforcements Tower	dvp	
+0x0276	Blackmire 4, Dungeon 4: Trials of Kivik Lir	dvp	
+0x0277	Blackmire 4, Dungeon 7: Gallery of Kivik Lir	dvp	
+0x027C	Ancient Empyrean Grotto	dvp	
+0x027D	Lair of Eviscerators	dvp	
+0x027E	Martinate Holding	dvp	
+0x027F	East Fork Dam Hive	dvp	
+0x0282	Olthoi Soldier Nest	dvp	
+0x0283	The Dark Lair	dvp	
+0x0284	Abandoned Tumerok Site	dvp	
+0x0285	Wasteland Hive	dvp	
+0x0286	Tumerok Cave	dvp	
+0x0287	Aun Papileona's Shrine	dvp	
+0x0288	Royal Hive	dvp	
+0x0289	Tiny Hive	dvp	
+0x028A	Small Hive	dvp	
+0x028B	Simple Hive	dvp	
+0x028C	Shallow Hive	dvp	
+0x028D	New Hive	dvp	
+0x028E	Palenqual's Cavern	dvp	
+0x028F	Swamp Gardens	dvp	
+0x0290	Stable Rift	dvp	
+0x0291	Singularity Bore	dvp	
+0x0292	Tumerok Cavern	dvp	
+0x0293	Habitat	dvp	
+0x0294	Land Bridge Staging Complex: Director's Private Chamber	dvp	
+0x0295	Inculcation Cells	dvp	
+0x0296	South Quiddity Dungeon	dvp	
+0x0297	North Quiddity Dungeon	dvp	
+0x0298	Land Bridge Staging Complex: Main	dvp	
+0x0299	Larry's Garden	dvp	
+0x029A	Gredaline Consulate : Envoy's Chamber	dvp	
+0x029B	Gredaline Consulate : Main	dvp	
+0x029C	Linvak Tukal Entryway	dvp	
+0x029D	Mnenosyne Collection Site	dvp	
+0x029E	Aerbbax Laboratory : Main	dvp	
+0x029F	Aerbbax Laboratory : Haven	dvp	
+0x02A0	Sand Shallow	dvp	
+0x02A1	Panopticon	dvp	
+0x02A3	Moss Chamber NPC room	dvp	
+0x02A4	South Tumerok Vanguard Outpost	dvp	
+0x02A5	North Tumerok Vanguard Outpost	dvp	
+0x02A6	Lyceum Training Grounds	dvp	
+0x02A7	Lyceum Training Grounds	dvp	
+0x02A8	Lyceum Training Grounds	dvp	
+0x02A9	Hieromancer's Hall	dvp	
+0x02AA	Desert March	dvp	
+0x02AB	Beyond the Mines of Despair	dvp	
+0x02AC	Empyrean Cloister: Lower/Upper (Mausoleum)	dvp	
+0x02AD	Empyrean Cloister: Entrance	dvp	
+0x02AE	Chakron Flux: Entrance	dvp	
+0x02AF	Chakron Flux: Lower & Upper	dvp	
+0x02B0	Sepulcher of the Hopeslayer	dvp	
+0x02B1	Shade Stronghold	dvp	
+0x02B2	Heart of Darkness	dvp	
+0x02B3	Moars Laboratory	dvp	
+0x02B4	A Mosswart Hideout	dvp	
+0x02B5	Moarsmen Spawning Grounds	dvp	
+0x02B6	Idol Spawning Grounds	dvp	
+0x02B7	Catacombs of Ithaenc	dvp	
+0x02B8	Rumuba's Hidey Hole	dvp	
+0x02BA	Moars	dvp	
+0x02BB	Jungle Shadows	dvp	
+0x02BC	Mosswart Nest	dvp	
+0x02BD	Small Ruin	dvp	
+0x02BE	Small Temple	dvp	
+0x02BF	Small Temple	dvp	
+0x02C0	Small Temple	dvp	
+0x02C1	Mud Cave	dvp	
+0x02C2	Moarsman Muck	dvp(+magellan variant)	Moarsmen Muck
+0x02C3	Slithis Pit	dvp	
+0x02C4	Moarsmen Hideout	dvp	
+0x02C5	Treacherous Tunnels	dvp	
+0x02C6	Lightless Tunnels	dvp	
+0x02C7	Tumideon Fortress	dvp	
+0x02C8	Banderling Conquest Dungeon	dvp	
+0x02C9	Sotiris Dungeon	dvp	
+0x02CA	Mosswart Maze	dvp	
+0x02CB	The Floating City (bar)	dvp	
+0x02CC	The Floating City (museum)	dvp	
+0x02CD	The Floating City (Tunnels)	dvp	
+0x02CE	The Floating City (construction area)	dvp	
+0x02CF	The Floating City (skyway)	dvp	
+0x02D0	The Floating City (lost chamber)	dvp	
+0x02D1	The Floating City (banderling area)	dvp(+magellan variant)	The Floating City
+0x02D2	Uninhabited Area	dvp	
+0x02D4	Xarabydun	dvp	
+0x02D7	Shendolain	dvp	
+0x02D9	King 3 Broodu - Part 3	dvp	
+0x02DA	Fenmalain : Chamber	dvp	
+0x02DB	Fenmalain : Vestibule	dvp	
+0x02DC	Caulnalain Vestibule	dvp(+magellan variant)	Caulnalain Vestibule Vault
+0x02DF	Caulnalain Chamber	dvp	
+0x02E0	Shendolain Vestibule	dvp	
+0x02E1	The Golem Sanctum	dvp	
+0x02E2	Arena	dvp	
+0x02E3	Arena	dvp	
+0x02E4	Aerfalle Keep	dvp	
+0x02E5	Krau Li's Labyrinth	dvp	
+0x02E6	Catacombs of the Forgotten	dvp	
+0x02E7	Lugian Excavations	dvp(+magellan variant)	Lugian Excavation
+0x02E8	Lugian Quarry	dvp	
+0x02E9	Lugian Mines	dvp	
+0x02EC	Coral Tunnels	dvp	
+0x02ED	Aerlinthe Reservoir (Lower)	dvp	
+0x02EE	Aerlinthe Reservoir	dvp	
+0x02EF	Soul Fearing Vestry	dvp	
+0x02F0	Hills Citadel	dvp(+magellan variant)	Lugian Citadel (Lin)
+0x02F1	Ridge Citadel	dvp	
+0x02F2	Wilderness Citadel	dvp	
+0x02F3	Hall of Metos	dvp	
+0x02F4	Hall of Metos	dvp	
+0x02F5	Hall of Metos	dvp	
+0x02F6	Sclavus Cathedral (North Ayan Baqur)	dvp	
+0x02F7	Sclavus Cathedral (West Dire.)	dvp	
+0x02F8	Burun Cathedral (prev. Sclavus Cathedral)	dvp	
+0x02FB	Olthoi Horde Nest (Colier)	dvp	
+0x02FC	Olthoi Horde Nest (Mt Retreat)	dvp	
+0x02FD	Olthoi Horde Nest (Bandit Castle)	dvp	
+0x0363	Holtburg South Training Academy	dvp	
+0x0364	Holtburg West Training Academy	dvp	
+0x0365	Shoushi Southeast Training Academy	dvp	
+0x0366	Shoushi West Training Academy	dvp	
+0x0367	Yaraq East Training Academy	dvp	
+0x0368	Yaraq North Training Academy	dvp	
+0x039C	Hollow Lair near Lytelthorpe	dvp	
+0x039E	Seat of the New Singularity	dvp	
+0x039F	Singular Obsidian Repository	dvp	
+0x03A0	Singular Chorizite Repository	dvp	
+0x03A1	Singular Pyreal Repository	dvp	
+0x03A2	Southern Infiltrator Keep	dvp	
+0x03A3	Northern Infiltrator Keep	dvp	
+0x03A4	The Asteliary	dvp	
+0x03A6	North Fork Dam Hive	dvp	
+0x03A7	Mount Elyrii Hive	dvp	
+0x1568	Direlands Subway	dvp	
+0x5269	Wedding Trial Dungeon	dvp	
+0x526A	Portal Space 3: Empyrean + Lilitha's Room + Final Room	dvp	
+0x526B	Portal Space 2: Second Section	dvp	
+0x526C	Portal Space 1: First section	dvp	
+0x526D	Empyrean Acid Propylaeum : Lower & Upper	dvp	
+0x526E	Empyrean Acid Propylaeum : Entrance	dvp	
+0x526F	Empyrean Fire Propylaeum : Lower & Upper	dvp	
+0x5270	Empyrean Fire Propylaeum : Entrance	dvp	
+0x5271	Empyrean Ice Propylaeum : Lower & Upper	dvp	
+0x5272	Empyrean Ice Propylaeum : Entrance	dvp	
+0x5273	Empyrean Lightning Propylaeum : Lower & Upper	dvp	
+0x5274	Empyrean Lightning Propylaeum : Entrance	dvp	
+0x5275	Farmer's Basement	dvp	
+0x5276	Hall of Hollows	dvp	
+0x5360	Alvan Court	dvp	
+0x5361	Caerna Dwellings	dvp	
+0x5362	Illsin Veranda	dvp	
+0x5363	Marin Court	dvp	
+0x5364	Ruadnar Court	dvp	
+0x5365	Senmai Court	dvp	
+0x5366	Sigil Veranda	dvp	
+0x5367	Sorveya Court	dvp	
+0x5368	Sylvan Dwellings	dvp	
+0x5369	Treyval Veranda	dvp	
+0x536A	Hidden Dungeon	dvp	
+0x536B	Convergent Median	dvp	
+0x536C	Malignent Tabernacle	dvp	
+0x536D	Nuhmudira's Dungeon	dvp	
+0x536E	Venemous Nidus	dvp	
+0x5456	Grievver Caves	dvp	
+0x5457	Colossus Foundry	dvp	
+0x5458	Mammet Foundry	dvp	
+0x5459	Effigy Foundry	dvp	
+0x545A	Mannikin Foundry	dvp	
+0x545B	Arcanum Research Facility	dvp	
+0x545C	Arcanum Storehouse : Entry	dvp	
+0x545D	Callous Heart: High Grounds	dvp	
+0x545E	Fathomless Chasm	dvp	
+0x545F	Fathomless Chasm Devex	dvp	
+0x5460	Fathomless Chasm Descent	dvp	
+0x5462	Gelidite Library: Oubliette	dvp	
+0x5463	Gelidite Library: Labyrinth	dvp	
+0x5464	Gelidite Library: Entrance	dvp	
+0x5465	Sanctum Residential Halls	dvp	
+0x5643	Gromnie Clan Training Camp	dvp	
+0x5644	Mask Clan Training Camp	dvp	
+0x5645	Abandoned Armory	dvp	
+0x5646	An Archive	dvp	
+0x5647	Tower Base	dvp	
+0x5648	Misty Mine	dvp	
+0x5649	Dark Tree Crystal Mine	dvp	
+0x564A	Spirit Cell	dvp	
+0x564B	Crystal Mine Extreem	dvp	
+0x564C	Crystal Mine High	dvp	
+0x564D	Crystal Mine Mid	dvp	
+0x564E	Crystal Mine Low	dvp	
+0x564F	Crystal Mine New Isparians	dvp	
+0x5650	Victory Residential Halls	dvp	
+0x5651	Frest Greelving's Dungeon	dvp	
+0x5653	Citadel Library	dvp	
+0x5654	Gaerlan's Inner Sanctum	dvp	
+0x5656	Haven Residential Halls	dvp	
+0x565E	Oriel Residential Halls	dvp	
+0x565F	Elemental Sanctum	dvp	
+0x5660	Martine's Retreat	dvp	
+0x5661	Atrium Residential Halls	dvp	
+0x5743	Frost Guardian Lair	dvp	
+0x5744	Proving Grounds Low	dvp	
+0x5745	Icy Demise	dvp	
+0x5746	Lightning Ziggurat	dvp	
+0x5748	Tusker Burrow	dvp	
+0x5749	Tusker Lodge	dvp	
+0x574A	Warehouse	dvp	
+0x574B	Warehouse (ransacked)	dvp	
+0x574C	Warehouse Annex Mine	dvp	
+0x574D	Deeper Catacombs (BDC)	dvp	
+0x574E	Deeper Catacombs (OHN)	dvp	
+0x574F	Deeper Catacombs (OHN Mt Retreat)	dvp	
+0x5750	Deeper Catacombs (OHN Colier)	dvp	
+0x5751	Deeper Catacombs (Crater Lair)	dvp	
+0x5752	Deeper Catacombs (Olthoi Tunnels)	dvp	
+0x5753	Deeper Catacombs (LoD)	dvp	
+0x5772	Olthoi Brood Hive	dvp	
+0x5773	Olthoi Brood Hive	dvp	
+0x5774	Secret Putiputi Place : part 1	dvp	
+0x5775	Secret Putiputi Place : part 3	dvp	
+0x5776	Secret Putiputi Place : part 4	dvp	
+0x5777	Falcon Clan Training Camp	dvp	
+0x5778	Serpent Clan Training Ground	dvp	
+0x5779	Shreth Clan Training Camp	dvp	
+0x577A	Reedshark Clan Training Camp	dvp	
+0x5843	Fire Guardian Lair	dvp	
+0x5844	Proving Ground Mid	dvp	
+0x5845	Fire Aspect Dungeon	dvp	
+0x5846	Acid Ziggurat	dvp	
+0x5848	Tusker Freehold	dvp	
+0x5849	Tusker Assault	dvp	
+0x584A	Tusker Shrine	dvp	
+0x584B	Olthoi Brood Hive	dvp	
+0x584C	Olthoi Brood Hive	dvp	
+0x5943	Acid Guardian Lair	dvp	
+0x5944	Proving Grounds High	dvp	
+0x5945	Acid Aspect Dungeon	dvp	
+0x5946	Fire Ziggurat	dvp	
+0x5948	Tusker Armory	dvp	
+0x5949	Tusker Lacuna	dvp	
+0x594A	Chapel of Mowen	dvp	
+0x594B	Aerbbax's Holding	dvp	
+0x594C	Gerent's Compound	dvp	
+0x594D	Ancient Temple	dvp	
+0x5A43	Lightning Guardian Lair	dvp	
+0x5A44	Proving Grounds Extreme	dvp	
+0x5A45	Electric Destruction	dvp	
+0x5A46	Frost Ziggurat	dvp	
+0x5A48	Tusker Barracks	dvp	
+0x5A49	Tusker Honeycombs	dvp	
+0x5A4A	Tusker Pits	dvp	
+0x5B42	Virindi Complex	dvp	
+0x5B43	Olthoi Arcade (North)	dvp	
+0x5B44	Olthoi Arcade Central	dvp	
+0x5B46	Tusker Cave	dvp	
+0x5B47	Tusker Habitat	dvp	
+0x5B48	Tusker Holding	dvp	
+0x5B49	Plated Rifts	dvp	
+0x5B4A	Tusker Quarters	dvp	
+0x5C43	Tusker Cavern	dvp	
+0x5C44	Tusker Encampments	dvp	
+0x5C45	Tusker Abode	dvp	
+0x5C46	Tusker Gauntlet	dvp	
+0x5C47	Tusker Grotto	dvp	
+0x5C48	Rampage Bluff	dvp	
+0x5C49	Tusker Retreat	dvp	
+0x5C4A	Tusker Temple	dvp	
+0x5C4C	Blackmire 3, dungeon 1: Entrance	dvp	
+0x5C4E	Olthoi Brood Hive	dvp	
+0x5C4F	Blackmire 3, dungeon 2: Well of Tears	dvp	
+0x5D43	Tusker Temple	dvp	
+0x5D44	Tusker Temple	dvp	
+0x5D45	Tusker Tunnels	dvp	
+0x5D46	Vengeance Caverns	dvp	
+0x5D47	Temple of Enlightment	dvp	
+0x5D48	Temple of Forgetfulness	dvp	
+0x5D49	Olthoi Arcade (South)	dvp	
+0x5D4A	Olthoi Chasm	dvp	
+0x5D4B	Shallow Olthoi Chasm	dvp	
+0x5D4C	Deep Olthoi Chasm	dvp	
+0x5D4D	Cavernous Olthoi Chasm	dvp	
+0x5D4E	Abyssal Olthoi Chasm	dvp	
+0x5E44	Tusker Food Storage	dvp	
+0x5E45	Black Death Catacombs (BDC)	dvp	
+0x5E46	Catacombs of Opposition	dvp	
+0x5E47	Asheron's Sanctum	dvp	
+0x5E48	Olthoi Brood Hive	dvp	
+0x5E49	Olthoi Brood Hive	dvp	
+0x5E4A	Olthoi Brood Hive	dvp	
+0x5E4B	Olthoi Brood Hive	dvp	
+0x5E4C	Bandit Hideout (Entrance)	dvp	
+0x5E4D	Bandit Hideout (prison)	dvp	
+0x5F43	Legend Of The Tusker King	dvp	
+0x5F44	Throne Of The Tusker King	dvp	
+0x5F45	Fir Tree	dvp	
+0x5F46	Heart of Innocence	dvp	
+0x5F47	Elemental Caverns	dvp	
+0x5F48	Hidden Cavern	dvp	
+0x5F4B	Blackmire 3, dungeon 3: Jumping Dungeon	dvp	
+0x5F4E	Blackmire 3, dungeon 4: The Sewer	dvp	
+0x5F51	Blackmire 3, dungeon 5: Patriarch Zixki	dvp	
+0x6043	Tusker Warrior's Lair	dvp	
+0x6044	Behind the Waterfall	dvp	
+0x6045	Caul Asylum	dvp	
+0x6046	Caul Athenaeum	dvp	
+0x6047	Caul Sanitorium	dvp	
+0x6048	Aerbax's Antechamber	dvp	
+0x6049	Renegade Garrison	dvp	
+0x604A	Sclavus Temple	dvp	
+0x6143	Ulgrim's Basement	dvp	
+0x6144	Lower Corridor	dvp	
+0x6145	Matron Hive West	dvp	
+0x6146	Matron Hive East	dvp	
+0x6147	Mountain Citadel	dvp	
+0x6148	Desert Citadel	dvp	
+0x6149	Crystal Mine	dvp	
+0x614A	Lair of the Ancient Queen	dvp	
+0x614B	Drudge Fight	dvp	
+0x6243	Marketplace	dvp	
+0x6244	Liazk Itzi's Temple (Part 2 & 4)	dvp	
+0x6245	Liazk Itzi	dvp	
+0x6246	Liazk Itzi's Temple (part 5 & 6)	dvp	
+0x6247	Burun Burrow	dvp	
+0x6248	Renegade Fortress	dvp	
+0x6249	Renegade Stronghold	dvp	
+0x624A	A Burun Cavern	dvp	
+0x6343	Knorr: Barracks	dvp	
+0x6344	Knorr Trials	dvp	
+0x6345	Subterannean Farm	dvp	
+0x6346	Matron Hive South	dvp	
+0x6347	Matron Hive North	dvp	
+0x6348	Caliginous Bethel	dvp	
+0x634A	Lair of Homunculus	dvp	
+0x634C	Tainted Grotto	dvp	
+0x6443	Knorr: Research Chambers	dvp	
+0x6444	Seat of Knorr	dvp	
+0x6445	Knorr: Forge	dvp	
+0x6446	Tunnels to the Harbinger (Vincadi)	dvp	
+0x6447	Tunnels to the Harbinger (Issk)	dvp	
+0x6448	Mount Ingot	dvp	
+0x6449	Dragon's Power	dvp	
+0x644A	Decrepit Tower	dvp	
+0x6545	Blackmire Temple	dvp	
+0x6546	Hall of the Arbiter	dvp	
+0x6547	Hall of the Temple Guardians	dvp	
+0x6548	Orphanage	dvp	
+0x6549	A Renegade Stronghold	dvp	
+0x654A	A Renegade Stronghold	dvp	
+0x654B	A Renegade Stronghold	dvp	
+0x6678	Olthoi Warrior Nest	dvp	
+0x6679	Crumbling Empyrean Mansion	dvp	
+0x667A	Mutilator Tunnels	dvp	
+0x7200	Winthur Gate	dvp	
+0x7300	Larkspur Gardens	dvp	
+0x7400	Mellas Court	dvp	
+0x7500	Vesper Gate	dvp	
+0x7600	Gajin Dwellings	dvp	
+0x7700	Valorya Gate	dvp	
+0x7800	Heartland Yard	dvp	
+0x7900	Ivory Gate	dvp	
+0x7A00	Alphus Court	dvp	
+0x7B00	Hasina Gardens	dvp	
+0x7C00	Sorac Gate	dvp	
+0x7D00	Maru Veranda	dvp	
+0x7E00	Forsythian Gardens	dvp	
+0x7F00	Vindalan Dwellings	dvp	
+0x8000	Syrah Dwellings	dvp	
+0x8100	Allain Court	dvp	
+0x8200	White Lotus Gate	dvp	
+0x8300	Autumn Moon Gardens	dvp	
+0x8400	Trellyn Gardens	dvp	
+0x8500	Endara Gate	dvp	
+0x8600	Celcynd Grotto	dvp	
+0x8700	Trothyr Hollow	dvp	
+0x8800	Jojii Gardens	dvp	
+0x8900	Cedraic Court	dvp	
+0x8A00	Ben Ten Lodge	dvp	
+0x8B00	Dulok Court	dvp	
+0x8C00	Crescent Moon Veranda	dvp	
+0x8D00	Jade Gate	dvp	
+0x8E00	Ispar Yard	dvp	
+0x8F00	Xao Wu Gardens	dvp	
+0x9000	Accord Veranda	dvp	
+0x9100	Candeth Court	dvp	
+0x9200	Celdiseth Court	dvp	
+0x9300	Hibiscus Gardens	dvp	
+0x9400	Hibiscus Gardens	dvp	
+0x9500	Meditation Gardens	dvp	
+0x9600	Setera Gardens	dvp	
+0x9700	Spirit Gate	dvp	
+0x9800	Triumphal Gardens	dvp	
+0x9900	Wilamil Court	dvp	
+0xF784	Tusker Emporium	dvp	

@@ -1,0 +1,91 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Magellan 3 — the in-game plugin. Builds ONLY on Windows against an installed Decal 3 + VVS.
+    The pure logic lives in Magellan3.Core (netstandard2.0, fully tested offline).
+
+    Non-negotiables (see MAGELLAN2_PREFLIGHT.md sec.10):
+      * x86  — the AC client is 32-bit
+      * net48 — the Decal managed surrogate hosts .NET Framework plugins
+      * ComVisible + a FRESH Guid — never reuse the native 2003 CLSID
+      * register with the 32-bit RegAsm /codebase
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <RootNamespace>Magellan.Plugin</RootNamespace>
+    <AssemblyName>Magellan3</AssemblyName>
+    <OutputType>Library</OutputType>
+    <ComVisible>true</ComVisible>
+    <!--
+      We keep a hand-written Properties/AssemblyInfo.cs for [ComVisible] and the [Guid] TypeLib id,
+      so the SDK must NOT also auto-generate those attributes (they would collide: CS0579).
+    -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <DefineConstants>TRACE;VVS_REFERENCED;MAGELLAN_AUTOMAP</DefineConstants>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Magellan3.Core\Magellan3.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- MIT, targets net48 — drops straight in. Restores from nuget.org on your machine. -->
+    <PackageReference Include="Chorizite.DatReaderWriter" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Local assembly references. These HintPaths are set to THIS machine's install locations
+      (Decal 3.0 under Program Files (x86); VVS under C:\Games\VirindiPlugins). If you move an
+      install, update the matching HintPath. MAGELLAN_AUTOMAP is enabled above, so the VVS drawing
+      overlay (Ui/MapOverlay.cs, Ui/DxCanvas.cs) is compiled in.
+    -->
+    <Reference Include="Decal.Adapter">
+      <HintPath>C:\Program Files (x86)\Decal 3.0\Decal.Adapter.dll</HintPath>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Decal.FileService">
+      <!-- Holds Decal.Filters.FileService, the concrete type with GetCellFile/GetPortalFile.
+           CoreManager.Current.FileService returns the base FilterBase; we cast to this. -->
+      <HintPath>C:\Program Files (x86)\Decal 3.0\Decal.FileService.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="VirindiViewService">
+      <HintPath>C:\Games\VirindiPlugins\VirindiViewService\VirindiViewService.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The recovered view XML, embedded so MVView can load it as Magellan.Plugin.Resources.mainView.xml -->
+    <EmbeddedResource Include="Resources\mainView.xml">
+      <LogicalName>Magellan.Plugin.Resources.mainView.xml</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Data files ship beside the DLL; the plugin loads them from its own directory. -->
+    <None Include="..\..\data\places.xml">
+      <Link>places.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\dungeon_names.tsv">
+      <Link>dungeon_names.tsv</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\places_2.0.0.2.xml">
+      <Link>places_2.0.0.2.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
