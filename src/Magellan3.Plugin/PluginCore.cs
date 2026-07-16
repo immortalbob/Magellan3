@@ -578,10 +578,15 @@ namespace Magellan.Plugin
                         CoreManager.Current.Actions.LocationY,
                         out ns, out ew);
 
-                    // Relative option: when RelCoords is on and a route start is set, show the offset
-                    // from that start; otherwise absolute coords.
-                    if (_settings.RelCoords && _haveRouteStart)
-                        text = "Rel: " + Magellan.World.Coords.Format(ns - _routeStartNS, ew - _routeStartEW);
+                    // "Show overland relative co-ordinates" -- the ORIGINAL Magellan 2 semantics,
+                    // recovered from the 2003 binaries: with the option on and a place selected, the
+                    // overland readout becomes a live "Distance to <place>" tracker -- the signed
+                    // offset from you to the target, updating as you move, ticking toward zero on
+                    // arrival. (The original drew "Distance to %s : %.2fN %.2fE" on its map HUD; ours
+                    // lives in the top readout, the modern equivalent of that HUD line.)
+                    if (_settings.RelCoords && _trackName != null)
+                        text = "Distance to " + _trackName + ": "
+                             + Magellan.World.Coords.Format(_trackNS - ns, _trackEW - ew);
                     else
                         text = "Coords: " + Magellan.World.Coords.Format(ns, ew);
                 }
@@ -589,6 +594,10 @@ namespace Magellan.Plugin
             }
             catch { }
         }
+
+        // The live-tracked target for the RelCoords readout: the last place clicked in any list.
+        private string _trackName;
+        private double _trackNS, _trackEW;
 
         private void CoreManager_RenderFrame(object sender, EventArgs e)
         {
@@ -621,8 +630,9 @@ namespace Magellan.Plugin
                 PollCheckboxes();
 
                 // Update the always-on coordinate readout every tick, regardless of map state. On the
-                // surface: overland coords (absolute, or relative-to-start when RelCoords is on). Indoors:
-                // there are no meaningful overland coords, so show the dungeon name / landcell instead.
+                // surface: overland coords, or a live "Distance to <selected place>" tracker when
+                // RelCoords is on (the original Magellan 2 behaviour). Indoors: there are no
+                // meaningful overland coords, so show the dungeon name / landcell instead.
                 UpdateCoordReadout();
 
                 if (!_settings.ShowMap) { if (_overlay.Visible) _overlay.Visible = false; return; }
@@ -1171,6 +1181,11 @@ namespace Magellan.Plugin
             _routeEndNS = p.NS; _routeEndEW = p.EW;
             var rend = Txt(ref _txtRouteEnd, "txtRouteEnd");
             if (rend != null) rend.Text = (p.Name ?? "(place)") + " @ " + p.Coordinates;
+
+            // ...and arms the RelCoords live tracker (see UpdateCoordReadout): with "Show overland
+            // relative co-ordinates" on, the top readout now tracks distance to this place.
+            _trackName = p.Name ?? "(place)";
+            _trackNS = p.NS; _trackEW = p.EW;
         }
 
         private uint CurrentLandcell() { return unchecked((uint)CoreManager.Current.Actions.Landcell); }
