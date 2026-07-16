@@ -171,6 +171,14 @@ namespace Magellan.Plugin
         }
 
         // Set true when Startup completes; the banner (deferred to login) reports this.
+        /// <summary>
+        /// Release version, shown in the login banner. Bump alongside AssemblyFileVersion and the
+        /// txtAboutTitle text in Resources/mainView.xml each release -- the banner doubles as the
+        /// "am I actually running the new DLL?" tell from research file 12 sec 6 (a stale locked
+        /// DLL is a classic time sink).
+        /// </summary>
+        public const string PluginVersion = "1.1.2";
+
         private bool _startupOk;
         private bool _bannerShown;
         private bool _checkboxesInitialized;   // true once checkboxes have been set from loaded settings
@@ -273,7 +281,7 @@ namespace Magellan.Plugin
                     _bannerShown = true;
                     if (_startupOk && _places != null && _dungeons != null)
                     {
-                        Chat("Magellan 3 loaded. " + _places.All.Count + " places, " + _dungeons.Count + " dungeon names.");
+                        Chat("Magellan 3 v" + PluginVersion + " loaded. " + _places.All.Count + " places, " + _dungeons.Count + " dungeon names.");
                         if (_places.CorrectionsApplied > 0)
                             Chat("Repaired " + _places.CorrectionsApplied + " off-map coordinate(s) at load.");
                         Chat("Commands: /mag phase (verify DAT read), /mag diag (status), /mag map (toggle map).");
@@ -915,7 +923,14 @@ namespace Magellan.Plugin
                 var q = Edt(ref _txtQuery, "txtQuery");
                 var lst = Lst(ref _lstResults, "lstResults");
                 var frag = q != null ? q.Text : "";
-                FillList(lst, _places.Search(frag));
+                var results = new System.Collections.Generic.List<Place>(_places.Search(frag));
+                FillList(lst, results);
+                // Every button gets a chat acknowledgment, including the empty case (research file 14
+                // sec 6.3): a silent zero-result search is indistinguishable from a dead button -- and
+                // during the v0.7 beta, from the wireup bug that really did produce dead buttons.
+                Chat(results.Count == 0
+                    ? "No places match '" + frag + "'."
+                    : results.Count + " place" + (results.Count == 1 ? "" : "s") + " for '" + frag + "'.");
             }
             catch (Exception ex) { Fail("btnFind", ex); }
         }
@@ -944,7 +959,11 @@ namespace Magellan.Plugin
                     CoreManager.Current.Actions.LocationY,
                     out ns, out ew);
 
-                FillList(Lst(ref _lstProxResults, "lstProxResults"), _places.Near(ns, ew, radius));
+                var results = new System.Collections.Generic.List<Place>(_places.Near(ns, ew, radius));
+                FillList(Lst(ref _lstProxResults, "lstProxResults"), results);
+                Chat(results.Count == 0
+                    ? "Nothing within " + radius + " map units of " + Magellan.World.Coords.Format(ns, ew) + "."
+                    : results.Count + " place" + (results.Count == 1 ? "" : "s") + " within " + radius + " of " + Magellan.World.Coords.Format(ns, ew) + ".");
             }
             catch (Exception ex) { Fail("btnProxFind", ex); }
         }

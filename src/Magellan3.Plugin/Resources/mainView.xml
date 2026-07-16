@@ -1,7 +1,10 @@
 <?xml version="1.0" ?>
 <view icon="9310" title="Magellan 3" width="270" height="360">
   <control progid="DecalControls.FixedLayout">
-    <control progid="DecalControls.StaticText" left="5" top="3" width="255" height="16" text="Coords: (log in)" name="txtCoordReadout" textcolor="16776960"/>
+    <control progid="DecalControls.StaticText" left="5" top="3" width="255" height="16" text="Coords: (log in)" name="txtCoordReadout" textcolor="65535"/>
+    <!-- textcolor is a Win32 COLORREF (0x00BBGGRR), NOT decimal RGB (research file 13 sec 8.4).
+         Yellow is 65535 (0x0000FFFF); the old 16776960 (0xFFFF00) read as yellow in RGB thinking
+         but rendered CYAN. White (16777215) is a byte-order palindrome and safe either way. -->
     <control progid="DecalControls.Notebook" name="nbPages" left="0" top="22" width="270" height="316">
       <page label="Search">
         <control progid="DecalControls.FixedLayout">
@@ -59,12 +62,19 @@
       </page>
       <page label="About">
         <control progid="DecalControls.FixedLayout">
-          <control progid="DecalControls.StaticText" left="5" top="5" width="250" height="20" text="Magellan 3" name="txtAboutTitle" textcolor="16776960"/>
-          <control progid="DecalControls.StaticText" left="5" top="28" width="250" height="34" text="A dungeon mapper, places database, and route finder for Asheron's Call." name="txtAboutDesc"/>
-          <control progid="DecalControls.StaticText" left="5" top="70" width="250" height="18" text="Original Magellan 2 by Adam Wright (2003)." name="txtAboutOrig"/>
-          <control progid="DecalControls.StaticText" left="5" top="90" width="250" height="34" text="Resurrected and rebuilt for the modern Decal 3 / End-of-Retail client by Immortalbob." name="txtAboutAuthor"/>
-          <control progid="DecalControls.StaticText" left="5" top="130" width="250" height="18" text="Places: 3,307   Dungeon names: 653" name="txtAboutStats"/>
-          <control progid="DecalControls.StaticText" left="5" top="152" width="250" height="34" text="Automap, search, nearby, dungeon ID, relative coords, and routing." name="txtAboutFeatures"/>
+          <!-- VVS hard-clips StaticText at the declared width and does NOT wrap (research file 14
+               sec 10): at ~12pt, 250px holds roughly 43 characters, so long lines are split into
+               separate single-line controls rather than relying on a taller height. -->
+          <control progid="DecalControls.StaticText" left="5" top="5" width="250" height="20" text="Magellan 3 -- v1.1.2" name="txtAboutTitle" textcolor="65535"/>
+          <control progid="DecalControls.StaticText" left="5" top="28" width="250" height="18" text="A dungeon mapper, places database, and"/>
+          <control progid="DecalControls.StaticText" left="5" top="46" width="250" height="18" text="route finder for Asheron's Call."/>
+          <control progid="DecalControls.StaticText" left="5" top="72" width="250" height="18" text="Original Magellan 2 by Adam Wright (2003)." name="txtAboutOrig"/>
+          <control progid="DecalControls.StaticText" left="5" top="98" width="250" height="18" text="Resurrected and rebuilt for the modern"/>
+          <control progid="DecalControls.StaticText" left="5" top="116" width="250" height="18" text="Decal 3 / End-of-Retail client"/>
+          <control progid="DecalControls.StaticText" left="5" top="134" width="250" height="18" text="by Immortalbob."/>
+          <control progid="DecalControls.StaticText" left="5" top="160" width="250" height="18" text="Places: 3,307   Dungeon names: 653" name="txtAboutStats"/>
+          <control progid="DecalControls.StaticText" left="5" top="186" width="250" height="18" text="Automap, search, nearby, dungeon ID,"/>
+          <control progid="DecalControls.StaticText" left="5" top="204" width="250" height="18" text="relative coords, and routing."/>
         </control>
       </page>
     </control>
