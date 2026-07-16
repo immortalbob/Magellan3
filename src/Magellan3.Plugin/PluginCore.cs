@@ -118,6 +118,17 @@ namespace Magellan.Plugin
                     id => _fileService != null ? _fileService.GetPortalFile((int)id) : null);
                 _mapper = new DungeonMapper(dat);
 
+                // DEPENDENCY PREFLIGHT. DatReaderWriter drags in NuGet assemblies (System.Memory and
+                // friends) that must sit beside the plugin DLL. If one is missing, nothing fails at
+                // load -- the first map build throws FileNotFoundException instead, and the map is
+                // just silently empty (a beta tester lost days to exactly this). Force the whole
+                // chain to load NOW, in a catchable frame, and report by name at login.
+                try { TouchDatReaderWriter(); }
+                catch (Exception ex)
+                {
+                    _dependencyError = (ex.InnerException ?? ex).Message;
+                }
+
                 // The map overlay is the one part that draws with Direct3D via VVS. In the default
                 // build it's a no-op (Stages A-E work without any VVS drawing); define MAGELLAN_AUTOMAP
                 // to link the real DxTexture overlay (Stage F). A VVS API mismatch in the overlay must
@@ -165,6 +176,21 @@ namespace Magellan.Plugin
         private bool _checkboxesInitialized;   // true once checkboxes have been set from loaded settings
         private bool _eventWiringDone;         // true once no [MVControlEvent] bindings remain pending
         private int _lastEventRetryTick;
+        private string _dependencyError;       // non-null if the DatReaderWriter assembly chain failed to load
+
+        /// <summary>
+        /// Forces DatReaderWriter (and transitively System.Memory etc.) to load. MUST stay
+        /// NoInlining: the assembly resolution happens when THIS method is JITted -- i.e. at the
+        /// call instruction inside Startup's try/catch -- so a missing dependency throws somewhere
+        /// we can catch and report, instead of inside the first map build on the render thread.
+        /// </summary>
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void TouchDatReaderWriter()
+        {
+            // Any DatReaderWriter type will do; DatCollection sits in the root namespace.
+            var t = typeof(DatReaderWriter.DatCollection);
+            if (t == null) throw new InvalidOperationException("unreachable");
+        }
 
         protected override void Shutdown()
         {
@@ -261,6 +287,9 @@ namespace Magellan.Plugin
                     // trouble was invisible to the user (this is exactly how a dead main window
                     // shipped to a beta tester with no error on screen). Report it here instead,
                     // once chat exists, but only if there's actually something wrong.
+                    if (_dependencyError != null)
+                        Chat("MISSING DEPENDENCY: " + _dependencyError
+                             + " -- the dungeon map cannot work. Copy ALL DLLs from the release package next to Magellan3.dll.");
                     try
                     {
                         string report = MVWireupHelper.GetWireupReport(this);
@@ -1207,6 +1236,8 @@ namespace Magellan.Plugin
                 Chat("  fileservice errors=" + Magellan.Plugin.Mapping.DecalDatSource.ErrorCount
                      + (Magellan.Plugin.Mapping.DecalDatSource.LastError.Length > 0 ? " (" + Magellan.Plugin.Mapping.DecalDatSource.LastError + ")" : "")
                      + "; frame handler errors=" + _frameErrors);
+                if (_dependencyError != null)
+                    Chat("  MISSING DEPENDENCY: " + _dependencyError);
 #else
                 Chat("automap: not compiled (define MAGELLAN_AUTOMAP for the dungeon map).");
 #endif
