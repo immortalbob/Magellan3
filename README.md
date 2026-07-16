@@ -80,7 +80,7 @@ floor-outline seam-cancellation against a two-cell room that must read as one ou
    - `places.xml`, `dungeon_names.tsv`, `places_2.0.0.2.xml` — the places, dungeon-name, and routing data
 2. Put **all of those files together** in one folder (e.g. `C:\Games\Magellan3\`). They must sit
    side by side — the plugin loads the data files from beside the DLL, and won't work with just the DLL.
-3. Register the plugin with the **32-bit** RegAsm, run from that folder as **Administrator**:
+3. Register the plugin (magellan3.dll) with Decal, or use the **32-bit** RegAsm, run from that folder as **Administrator**:
    ```
    C:\Windows\Microsoft.NET\Framework\v4.0.30319\RegAsm.exe /codebase Magellan3.dll
    ```
