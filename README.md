@@ -2,15 +2,12 @@
 
 A 2026 rebuild of **Magellan 2** (Adam Wright, 2003) for **Decal 3** on the **End-of-Retail**
 Asheron's Call client: a places database, dungeon identification, on-screen coordinates, and a
-live dungeon automap and breadcrumb trail generated from the client's own DAT geometry.
+live dungeon automap generated from the client's own DAT geometry.
 
 The original was a native ATL/COM plugin that drew with GDI onto a device context Decal handed it.
 That device context, that DAT format, and that plugin contract are all gone. This is a clean
 reimplementation on the modern managed stack — but it starts from the original's data, window, and
 algorithm, all recovered from the 2003 binary and verified against independent sources.
-
-![Screenshot](images/magellan3.png)
-
 
 ## Why it exists
 
@@ -70,7 +67,7 @@ floor-outline seam-cancellation against a two-cell room that must read as one ou
 **Prerequisites** (install these first — Magellan does not bundle them):
 
 - **Asheron's Call**, an **End-of-Retail** client (the automap reads its `client_cell_1.dat`).
-- **Decal 3** (2.9.8.3) — the plugin framework.
+- **Decal 3** — the plugin framework.
 - **VirindiViewService (VVS)** — the UI/drawing toolkit the map and window use.
 
 **Then install Magellan 3:**
@@ -83,7 +80,12 @@ floor-outline seam-cancellation against a two-cell room that must read as one ou
    - `places.xml`, `dungeon_names.tsv`, `places_2.0.0.2.xml` — the places, dungeon-name, and routing data
 2. Put **all of those files together** in one folder (e.g. `C:\Games\Magellan3\`). They must sit
    side by side — the plugin loads the data files from beside the DLL, and won't work with just the DLL.
-3. Register the plugin (magellan3.dll) with Decal.
+3. Register the plugin with the **32-bit** RegAsm, run from that folder as **Administrator**:
+   ```
+   C:\Windows\Microsoft.NET\Framework\v4.0.30319\RegAsm.exe /codebase Magellan3.dll
+   ```
+   (You must have `Decal.Adapter.dll`, `Decal.FileService.dll`, and `VirindiViewService.dll`
+   reachable — the simplest way is to copy those three next to `Magellan3.dll` before registering.)
 4. Enable **Magellan 3** in Decal's plugin list, then launch AC.
 5. The Magellan window opens from its icon in the VVS bar. Search a place, enter a dungeon to see
    the automap, or run `/mag diag` to check status.
@@ -147,7 +149,7 @@ window proved unstable on the current client).
 ## Credits
 
 - **Adam Wright** — Magellan 2 (2003): the original places database, window, and automap algorithm.
-- **ACCPP (Immortalbob)** — the 2026 resurrection: reverse-engineering the 2003 binary and rebuilding the
+- **Immortalbob** — the 2026 resurrection: reverse-engineering the 2003 binary and rebuilding the
   whole plugin on the modern Decal 3 / End-of-Retail managed stack.
 - **Chorizite** — `DatReaderWriter` (MIT): the DAT parsing.
 - **DungeonViewer** authors — `dungeons.dvp` (653 dungeon names) and the DM→ToD format deltas, used

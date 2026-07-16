@@ -64,14 +64,38 @@ namespace Magellan.Plugin.Mapping
         /// </summary>
         public static bool FileServiceIncludesIdHeader { get; set; } = true;
 
+        /// <summary>
+        /// Diagnostics for /mag diag: the last FileService failure and how many there have been.
+        /// Static because exactly one DecalDatSource exists in-game; if the FileService COM object
+        /// goes bad mid-session (portal transitions can recycle client state), every call starts
+        /// throwing, and without this counter the map just silently dies until relog.
+        /// </summary>
+        public static string LastError = "";
+        public static int ErrorCount;
+
         public bool TryGetCell<T>(uint id, out T obj) where T : DBObj, new()
         {
-            return TryUnpack(_cell(id), id, out obj);
+            // The delegate call itself (FileService.GetCellFile, a COM call) can throw -- it MUST be
+            // inside the guard, or a transient FileService failure at portal-hop time escapes clear
+            // up to the render-frame handler and silently kills that dungeon's map.
+            byte[] bytes;
+            try { bytes = _cell(id); }
+            catch (Exception ex) { Note("GetCellFile", id, ex); obj = null; return false; }
+            return TryUnpack(bytes, id, out obj);
         }
 
         public bool TryGetPortal<T>(uint id, out T obj) where T : DBObj, new()
         {
-            return TryUnpack(_portal(id), id, out obj);
+            byte[] bytes;
+            try { bytes = _portal(id); }
+            catch (Exception ex) { Note("GetPortalFile", id, ex); obj = null; return false; }
+            return TryUnpack(bytes, id, out obj);
+        }
+
+        private static void Note(string call, uint id, Exception ex)
+        {
+            ErrorCount++;
+            LastError = call + "(0x" + id.ToString("X8") + "): " + ex.GetType().Name + ": " + ex.Message;
         }
 
         private static bool TryUnpack<T>(byte[] bytes, uint id, out T obj) where T : DBObj, new()

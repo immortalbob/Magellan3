@@ -41,8 +41,8 @@ namespace Magellan.Plugin.Mapping
 
         /// <summary>
         /// Build the outline for the landblock the given landcell is in. Blocking. Off-thread.
-        /// Returns <see cref="DungeonGeometry.Empty"/> if this isn't an interior or the LandBlockInfo
-        /// isn't available yet.
+        /// If the LandBlockInfo isn't readable yet, returns an empty geometry with MissingCells=1
+        /// so the OnUpdateCell hook and the frame-loop watchdog know to retry.
         /// </summary>
         public DungeonGeometry Build(uint landcell)
         {
@@ -50,13 +50,27 @@ namespace Magellan.Plugin.Mapping
 
             LandBlockInfo info;
             if (!_dat.TryGetCell(lb | LandDefs.LbiCellId, out info) || info.NumCells == 0)
-                return DungeonGeometry.Empty;
+            {
+                // The LBI wasn't readable (FileService hiccup mid-transition, or not yet available).
+                // Report it as MISSING geometry, not final-empty: MissingCells > 0 is what makes the
+                // OnUpdateCell hook and the frame-loop watchdog retry. Returning the plain Empty here
+                // (MissingCells == 0) was the "map stays blank for this dungeon until relog" bug.
+                return new DungeonGeometry(lb, new MapEdge[0], missingCells: 1);
+            }
 
             var outline = new OutlineBuilder { FloorNormalZ = FloorNormalZ };
             var envCache = new Dictionary<ushort, Environment>();
             int missing = 0;
 
-            for (uint i = 0; i < info.NumCells; i++)
+            // Sanity cap: EnvCell ids run 0x0100..0xFFFD, so no landblock can have more cells than
+            // that range. A mis-parsed LBI (wrong phase, torn read) can report a garbage NumCells in
+            // the billions -- and this loop runs on the render thread, so an uncapped count would
+            // hang the client. Clamp; the watchdog rebuilds once the record reads cleanly.
+            uint numCells = info.NumCells;
+            const uint maxCells = LandDefs.LastEnvCellId - LandDefs.FirstEnvCellId + 1;
+            if (numCells > maxCells) { numCells = maxCells; missing++; }
+
+            for (uint i = 0; i < numCells; i++)
             {
                 uint cellId = lb | (LandDefs.FirstEnvCellId + i);
 

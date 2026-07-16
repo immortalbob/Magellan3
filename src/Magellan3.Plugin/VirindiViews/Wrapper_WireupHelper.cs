@@ -205,9 +205,32 @@ namespace MyClasses.MetaViewWrappers
 #endif
     static class MVWireupHelper
     {
+        // MODIFIED (Magellan 3): wireup no longer throws on the first unresolvable control.
+        //
+        // The stock helper aborted the ENTIRE binding pass on the first [MVControlReference] or
+        // [MVControlEvent] it couldn't resolve -- and controls on not-yet-realized tabs (research
+        // file 14 sec.4), controls whose concrete VVS type isn't in the wrapper's type map (varies
+        // by VVS version), or a stale attribute naming a removed control all resolve as null. One
+        // bad name therefore left the whole main window rendered-but-dead: visible, zero events
+        // wired, "not usable". Worse, the abort point depended on reflection enumeration order, so
+        // it differed per machine -- fine on one tester's box, dead on another's.
+        //
+        // Now: every reference and event binds independently; failures are recorded (GetWireupReport)
+        // and unbound events are kept for retry (RetryPendingEvents) so controls that realize lazily
+        // when their tab is first shown still get their handlers.
+        private class PendingEvent
+        {
+            public string Control;
+            public string EventName;
+            public MethodInfo Method;
+        }
+
         private class ViewObjectInfo
         {
             public List<MyClasses.MetaViewWrappers.IView> Views = new List<IView>();
+            public List<PendingEvent> PendingEvents = new List<PendingEvent>();
+            public List<string> UnboundReferences = new List<string>();
+            public int EventsWired;
         }
         static Dictionary<object, ViewObjectInfo> VInfo = new Dictionary<object, ViewObjectInfo>();
 
@@ -257,10 +280,19 @@ namespace MyClasses.MetaViewWrappers
                     }
 
                     if (mycontrol == null)
-                        throw new Exception("Invalid control reference \"" + attr.Control + "\"");
+                    {
+                        // Leave the field null and move on. PluginCore resolves every control lazily
+                        // through Chk/Txt/Lst/Edt anyway, so a null startup binding is recoverable --
+                        // aborting the whole pass here was not.
+                        info.UnboundReferences.Add(attr.Control);
+                        continue;
+                    }
 
                     if (!fi.FieldType.IsAssignableFrom(mycontrol.GetType()))
-                        throw new Exception("Control reference \"" + attr.Control + "\" is of wrong type");
+                    {
+                        info.UnboundReferences.Add(attr.Control + " (wrong type: " + mycontrol.GetType().Name + ")");
+                        continue;
+                    }
 
                     fi.SetValue(ViewObj, mycontrol);
                 }
@@ -293,26 +325,71 @@ namespace MyClasses.MetaViewWrappers
 
                 foreach (MVControlEventAttribute attr in attrs)
                 {
-                    MetaViewWrappers.IControl mycontrol = null;
-                    //Try each view
-                    foreach (MyClasses.MetaViewWrappers.IView v in info.Views)
+                    if (!TryWireEvent(info, ViewObj, attr.Control, attr.EventName, mi))
                     {
-                        try
-                        {
-                            mycontrol = v[attr.Control];
-                        }
-                        catch { }
-                        if (mycontrol != null)
-                            break;
+                        // The control isn't resolvable yet (unrealized tab, unmapped VVS type) or the
+                        // event hookup failed. Queue it: RetryPendingEvents re-attempts from the frame
+                        // loop, so a control that realizes when its tab is first shown still gets wired.
+                        info.PendingEvents.Add(new PendingEvent { Control = attr.Control, EventName = attr.EventName, Method = mi });
                     }
-
-                    if (mycontrol == null)
-                        throw new Exception("Invalid control reference \"" + attr.Control + "\"");
-
-                    EventInfo ei = mycontrol.GetType().GetEvent(attr.EventName);
-                    ei.AddEventHandler(mycontrol, Delegate.CreateDelegate(ei.EventHandlerType, ViewObj, mi.Name));
                 }
             }
+        }
+
+        private static bool TryWireEvent(ViewObjectInfo info, object ViewObj, string control, string eventName, MethodInfo mi)
+        {
+            MetaViewWrappers.IControl mycontrol = null;
+            foreach (MyClasses.MetaViewWrappers.IView v in info.Views)
+            {
+                try { mycontrol = v[control]; }
+                catch { }
+                if (mycontrol != null) break;
+            }
+            if (mycontrol == null) return false;
+
+            try
+            {
+                EventInfo ei = mycontrol.GetType().GetEvent(eventName);
+                if (ei == null) return false;
+                ei.AddEventHandler(mycontrol, Delegate.CreateDelegate(ei.EventHandlerType, ViewObj, mi.Name));
+                info.EventsWired++;
+                return true;
+            }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// Re-attempt any event bindings that failed at WireupStart (lazily-realized tab controls).
+        /// Cheap; call from a throttled frame loop until it returns 0. Returns the count still pending.
+        /// </summary>
+        public static int RetryPendingEvents(object ViewObj)
+        {
+            if (!VInfo.ContainsKey(ViewObj)) return 0;
+            ViewObjectInfo info = VInfo[ViewObj];
+            for (int i = info.PendingEvents.Count - 1; i >= 0; i--)
+            {
+                PendingEvent p = info.PendingEvents[i];
+                if (TryWireEvent(info, ViewObj, p.Control, p.EventName, p.Method))
+                    info.PendingEvents.RemoveAt(i);
+            }
+            return info.PendingEvents.Count;
+        }
+
+        /// <summary>One-line wireup health summary for /mag diag and the login banner.</summary>
+        public static string GetWireupReport(object ViewObj)
+        {
+            if (!VInfo.ContainsKey(ViewObj)) return "wireup: never ran";
+            ViewObjectInfo info = VInfo[ViewObj];
+            string s = "wireup: " + info.EventsWired + " events wired";
+            if (info.PendingEvents.Count > 0)
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (PendingEvent p in info.PendingEvents) { if (sb.Length > 0) sb.Append(", "); sb.Append(p.Control + "." + p.EventName); }
+                s += "; " + info.PendingEvents.Count + " pending (" + sb + ")";
+            }
+            if (info.UnboundReferences.Count > 0)
+                s += "; " + info.UnboundReferences.Count + " reference(s) unbound at startup (" + string.Join(", ", info.UnboundReferences.ToArray()) + ")";
+            return s;
         }
 
         public static void WireupEnd(object ViewObj)

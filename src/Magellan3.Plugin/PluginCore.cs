@@ -163,6 +163,8 @@ namespace Magellan.Plugin
         private bool _startupOk;
         private bool _bannerShown;
         private bool _checkboxesInitialized;   // true once checkboxes have been set from loaded settings
+        private bool _eventWiringDone;         // true once no [MVControlEvent] bindings remain pending
+        private int _lastEventRetryTick;
 
         protected override void Shutdown()
         {
@@ -254,6 +256,18 @@ namespace Magellan.Plugin
                     {
                         Chat("Magellan 3: startup did not complete cleanly -- try /mag diag for status.");
                     }
+
+                    // Startup ran at char-select, where AddChatText goes nowhere -- so any wireup
+                    // trouble was invisible to the user (this is exactly how a dead main window
+                    // shipped to a beta tester with no error on screen). Report it here instead,
+                    // once chat exists, but only if there's actually something wrong.
+                    try
+                    {
+                        string report = MVWireupHelper.GetWireupReport(this);
+                        if (report.Contains("pending") || report.Contains("unbound") || report.Contains("never ran"))
+                            Chat("view " + report);
+                    }
+                    catch { }
                 }
 
                 PushSettingsToCheckboxes();
@@ -325,12 +339,16 @@ namespace Magellan.Plugin
             var a = Chk(ref _chkShowMap, "chkShowMap");           if (a != null) a.Checked = _settings.ShowMap;
             var b = Chk(ref _chkFootsteps, "chkFootsteps");       if (b != null) b.Checked = _settings.ShowFootsteps;
             var c = Chk(ref _chkLockRotation, "chkLockRotation"); if (c != null) c.Checked = _settings.LockRotation;
-            var d = Chk(ref _chkRelCoords, "chkRelCoords");       if (d != null) d.Checked = _settings.RelCoords;
 
             // Only allow the frame-loop poll to start reacting to checkbox changes once every checkbox
             // has actually been resolved AND set from the loaded settings. Until then the checkboxes may
             // read their XML defaults, and polling would corrupt the persisted config (see PollCheckboxes).
-            if (a != null && b != null && c != null && d != null)
+            //
+            // ONLY the three checkboxes that exist in mainView.xml belong in this gate. The old code
+            // also required chkRelCoords -- which was removed from the XML, so its resolve was ALWAYS
+            // null, the gate never opened, PollCheckboxes never ran, and this method kept re-running
+            // every 200ms overwriting the user's clicks: the Options tab was permanently dead.
+            if (a != null && b != null && c != null)
                 _checkboxesInitialized = true;
         }
 
@@ -479,12 +497,8 @@ namespace Magellan.Plugin
                     changed = true;
                 }
 
-                var d = Chk(ref _chkRelCoords, "chkRelCoords");
-                if (d != null && d.Checked != _settings.RelCoords)
-                {
-                    _settings.RelCoords = d.Checked;
-                    changed = true;
-                }
+                // (chkRelCoords was removed from the Options tab; _settings.RelCoords is retained for
+                // the relative-coordinate display logic but has no UI toggle at present.)
 
                 // Persist the moment anything changes -- don't rely on Shutdown (a client crash or
                 // force-close would otherwise lose the change). Cheap: a tiny XML file, only on a diff.
@@ -556,6 +570,16 @@ namespace Magellan.Plugin
                 // login). PollCheckboxes is a no-op until this succeeds, so it can't corrupt the config.
                 if (!_checkboxesInitialized) PushSettingsToCheckboxes();
 
+                // Re-attempt any control events the wireup pass couldn't bind at startup (controls on
+                // tabs VVS realizes lazily, or types the wrapper's map didn't recognise yet). Throttled
+                // to ~1s; stops entirely once everything is wired.
+                if (!_eventWiringDone && unchecked(now - _lastEventRetryTick) > 1000)
+                {
+                    _lastEventRetryTick = now;
+                    try { _eventWiringDone = MVWireupHelper.RetryPendingEvents(this) == 0; }
+                    catch { }
+                }
+
                 PollCheckboxes();
 
                 // Update the always-on coordinate readout every tick, regardless of map state. On the
@@ -573,19 +597,23 @@ namespace Magellan.Plugin
                     // Landblock changed (entered a dungeon, teleported to a new one, or stepped onto the
                     // surface). Rebuild geometry + clear the old trail + show/hide the map. The DAT Build
                     // happens ONCE per transition, not per frame, so it's fine to do here.
+                    //
+                    // ORDER MATTERS: the old code did the (throwing-capable) Build BEFORE Visible=true,
+                    // with _landblock already committed. One exception at hop time -- swallowed by the
+                    // outer catch -- skipped Visible=true and never retried: the map window vanished
+                    // and stayed gone until relog. Now the build is exception-safe (TryRebuild), the
+                    // window is shown regardless, and the watchdog below fills in geometry that failed.
                     _landblock = lb;
+                    _renderer.ClearTrail();
                     if (LandDefs.IsInterior(lc))
                     {
-                        _geo = _mapper.Build(lc);
-                        _renderer.ClearTrail();
-                        _overlay.SetGeometry(_geo, 0, 0, 0, 0);   // push the new walls to the overlay
+                        TryRebuild(lc);                            // failure tolerated; watchdog retries
                         _overlay.SetTitle(_dungeons.Caption(lc));  // dungeon name/hex in the title bar
                         _overlay.Visible = true;
                     }
                     else
                     {
                         _geo = DungeonGeometry.Empty;
-                        _renderer.ClearTrail();
                         _overlay.SetGeometry(_geo, 0, 0, 0, 0);
                         _overlay.Visible = false;                 // no automap on the surface
                     }
@@ -594,6 +622,21 @@ namespace Magellan.Plugin
                 // Cheap per-frame update: only meaningful indoors, but harmless otherwise.
                 if (LandDefs.IsInterior(lc))
                 {
+                    // WATCHDOG. If the map should be showing but the geometry we hold is empty or
+                    // belongs to a different landblock (a rebuild failed mid-transition, or the LBI
+                    // wasn't readable yet), retry every ~2s. This converts every transient failure
+                    // mode -- FileService hiccup, cell not yet available, torn read -- from "map is
+                    // dead until relog" into "map appears within a couple of seconds".
+                    bool geoStale = _geo == null || _geo.IsEmpty || _geo.Landblock != lb;
+                    if (geoStale && unchecked(now - _lastRebuildTick) > 2000)
+                    {
+                        if (TryRebuild(lc))
+                        {
+                            _overlay.SetTitle(_dungeons.Caption(lc));
+                            _overlay.Visible = true;   // re-show in case an earlier failure left it hidden
+                        }
+                    }
+
                     float x = (float)CoreManager.Current.Actions.LocationX;
                     float y = (float)CoreManager.Current.Actions.LocationY;
                     float z = (float)CoreManager.Current.Actions.LocationZ;
@@ -602,7 +645,44 @@ namespace Magellan.Plugin
                     _overlay.SetFrameState(_geo, x, y, z, h, _dungeons.Caption(lc));
                 }
             }
-            catch { /* never let a per-frame handler throw into the client's render loop */ }
+            catch { _frameErrors++; /* never let a per-frame handler throw into the client's render loop */ }
+        }
+
+        // ---- map rebuild bookkeeping (all surfaced via /mag diag) ----
+        private int _lastRebuildTick;
+        private int _rebuildOk, _rebuildFail;
+        private string _lastMapError = "";
+        private bool _mapErrorAnnounced;
+        private int _frameErrors;
+
+        /// <summary>
+        /// Build geometry for the current landcell and push it to the overlay. NEVER throws -- a
+        /// failure is recorded (and announced once per session) and returns false so callers and the
+        /// watchdog can retry. Blocking DAT read: call only on landblock change / throttled retry.
+        /// </summary>
+        private bool TryRebuild(uint lc)
+        {
+            _lastRebuildTick = Environment.TickCount;
+            try
+            {
+                var g = _mapper.Build(lc);
+                _geo = g ?? DungeonGeometry.Empty;
+                _overlay.SetGeometry(_geo, 0, 0, 0, 0);
+                if (_geo.IsEmpty) { _rebuildFail++; return false; }
+                _rebuildOk++;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _rebuildFail++;
+                _lastMapError = ex.GetType().Name + ": " + ex.Message;
+                if (!_mapErrorAnnounced)
+                {
+                    _mapErrorAnnounced = true;
+                    Chat("map rebuild failed (" + _lastMapError + ") -- retrying automatically; /mag diag for details.");
+                }
+                return false;
+            }
         }
 
         public void RefreshLandblock(bool force = false)
@@ -615,8 +695,9 @@ namespace Magellan.Plugin
 
             if (LandDefs.IsInterior(landcell))
             {
-                _geo = _mapper.Build(landcell);                       // blocking; acceptable on landblock change
+                TryRebuild(landcell);                                 // blocking; acceptable on landblock change
                 _renderer.ClearTrail();
+                _overlay.SetTitle(_dungeons.Caption(landcell));
                 _overlay.Visible = _settings.ShowMap;
             }
             else
@@ -658,6 +739,15 @@ namespace Magellan.Plugin
                 if (arg.Equals("map", StringComparison.OrdinalIgnoreCase))
                 {
                     _settings.ShowMap = !_settings.ShowMap;
+
+                    // Keep the Options checkbox in step with the command. The frame-loop poll treats
+                    // the checkbox as the source of truth; if we flip the setting without flipping the
+                    // box, the very next poll tick "detects a user change" and reverts the command
+                    // within 200ms. Same rule for ANY future code path that writes _settings.ShowMap.
+                    var cb = Chk(ref _chkShowMap, "chkShowMap");
+                    if (cb != null) cb.Checked = _settings.ShowMap;
+                    SaveSettings();
+
                     if (_settings.ShowMap)
                     {
                         // Force a geometry build + push for wherever we're standing, so toggling the
@@ -667,8 +757,9 @@ namespace Magellan.Plugin
                         if (LandDefs.IsInterior(lc))
                         {
                             _landblock = LandDefs.LandblockOf(lc);
-                            _geo = _mapper.Build(lc);
+                            TryRebuild(lc);
                             UpdateFrameState(lc);
+                            _overlay.SetTitle(_dungeons.Caption(lc));
                             _overlay.Visible = true;
                             Chat("Map on. geometry: " + (_geo != null ? _geo.Edges.Count : 0) + " edges, overlay.Visible=" + _overlay.Visible);
                             Chat("  overlay status: " + _overlay.Status);
@@ -719,12 +810,11 @@ namespace Magellan.Plugin
                     var a = Chk(ref _chkShowMap, "chkShowMap");
                     var b = Chk(ref _chkFootsteps, "chkFootsteps");
                     var c = Chk(ref _chkLockRotation, "chkLockRotation");
-                    var d = Chk(ref _chkRelCoords, "chkRelCoords");
                     Chat("checkbox bindings: "
                         + "ShowMap=" + (a != null ? a.Checked.ToString() : "NOT BOUND")
                         + ", Footsteps=" + (b != null ? b.Checked.ToString() : "NOT BOUND")
                         + ", LockRot=" + (c != null ? c.Checked.ToString() : "NOT BOUND")
-                        + ", RelCoords=" + (d != null ? d.Checked.ToString() : "NOT BOUND"));
+                        + "; init=" + _checkboxesInitialized);
                     Chat("settings now: ShowMap=" + _settings.ShowMap + ", Footsteps=" + _settings.ShowFootsteps
                         + ", LockRot=" + _settings.LockRotation + ", RelCoords=" + _settings.RelCoords);
                     // Also report the Search/Nearby/Details control bindings -- via the LAZY resolvers
@@ -772,10 +862,10 @@ namespace Magellan.Plugin
         [MVControlReference("chkShowMap")]      private ICheckBox _chkShowMap = null;
         [MVControlReference("chkFootsteps")]    private ICheckBox _chkFootsteps = null;
         [MVControlReference("chkLockRotation")] private ICheckBox _chkLockRotation = null;
-        // chkRelCoords checkbox was removed from the Options tab. The field stays (lazy-resolve call
-        // sites null-guard it, so they harmlessly no-op) but it has NO [MVControlReference] -- otherwise
-        // wireup would try to bind a control that no longer exists.
-        private ICheckBox _chkRelCoords = null;
+        // chkRelCoords was fully removed: the control from the XML, the field, the [MVControlEvent]
+        // handler, and its lines in Push/PollCheckboxes. The half-removed version (field + event
+        // attribute left behind) was the root cause of BOTH v0.7 beta bugs -- see the notes on
+        // PushSettingsToCheckboxes and the removed ChkRelCoords_Change below.
 
         // The always-on coordinate readout, now a StaticText at the top of the main window (a second
         // standalone HudView crashed the client, so it lives in the window VVS already manages).
@@ -940,12 +1030,12 @@ namespace Magellan.Plugin
             catch (Exception ex) { Fail("chkLockRotation", ex); }
         }
 
-        [MVControlEvent("chkRelCoords", "Change")]
-        private void ChkRelCoords_Change(object sender, MVCheckBoxChangeEventArgs e)
-        {
-            try { _settings.RelCoords = e.Checked; SaveSettings(); Chat("[option] Relative coords = " + e.Checked); }
-            catch (Exception ex) { Fail("chkRelCoords", ex); }
-        }
+        // NOTE: ChkRelCoords_Change was REMOVED along with the checkbox itself. Its [MVControlEvent]
+        // attribute named a control that no longer exists in mainView.xml, and the stock wireup
+        // helper threw on the first unresolvable event target -- aborting event wiring at a
+        // reflection-enumeration-order-dependent point. On some machines that left the ENTIRE main
+        // window rendered but dead (no button/list events wired). Rule going forward: removing a
+        // control from the XML means removing its [MVControlEvent] method in the same commit.
 
         // ---------------------------------------------------------------- list helpers
 
@@ -1111,9 +1201,16 @@ namespace Magellan.Plugin
 #if MAGELLAN_AUTOMAP
                 Chat("automap: COMPILED IN (MAGELLAN_AUTOMAP). Overlay visible=" + _overlay.Visible + "; renderFrameHook=" + _renderFrameHooked);
                 Chat("  overlay status: " + _overlay.Status);
+                Chat("  geometry: " + (_geo == null ? "null" : (_geo.Edges.Count + " edges, missing=" + _geo.MissingCells + ", landblock=0x" + _geo.Landblock.ToString("X8")))
+                     + "; rebuilds ok=" + _rebuildOk + " fail=" + _rebuildFail
+                     + (_lastMapError.Length > 0 ? "; lastErr=" + _lastMapError : ""));
+                Chat("  fileservice errors=" + Magellan.Plugin.Mapping.DecalDatSource.ErrorCount
+                     + (Magellan.Plugin.Mapping.DecalDatSource.LastError.Length > 0 ? " (" + Magellan.Plugin.Mapping.DecalDatSource.LastError + ")" : "")
+                     + "; frame handler errors=" + _frameErrors);
 #else
                 Chat("automap: not compiled (define MAGELLAN_AUTOMAP for the dungeon map).");
 #endif
+                try { Chat("  " + MVWireupHelper.GetWireupReport(this)); } catch { }
                 try
                 {
                     Chat("config: " + (_configPath ?? "(none)") + (System.IO.File.Exists(_configPath) ? " [exists]" : " [not yet written]"));
