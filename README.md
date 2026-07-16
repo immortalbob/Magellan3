@@ -1,4 +1,5 @@
 # Magellan 3
+![Magellan3](images/magellan3.png)
 
 A 2026 rebuild of **Magellan 2** (Adam Wright, 2003) for **Decal 3** on the **End-of-Retail**
 Asheron's Call client: a places database, dungeon identification, on-screen coordinates, and a
