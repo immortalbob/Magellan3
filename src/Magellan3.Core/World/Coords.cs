@@ -95,5 +95,58 @@ namespace Magellan.World
                 Math.Abs(ns), ns >= 0 ? "N" : "S",
                 Math.Abs(ew), ew >= 0 ? "E" : "W");
         }
+
+        /// <summary>
+        /// Parses a display-style coordinate pair -- "38.6S, 82.1E" -- into signed NS/EW. The inverse
+        /// of <see cref="Format"/>. Tolerates lowercase hemisphere letters (the 2.2.0.0 places data
+        /// contains e.g. "66.1s, 67.3e"), flexible whitespace, and a missing comma. This is the ONLY
+        /// trustworthy encoding of portal destinations: the older 2.0.0.2 DEST_COORD_X/Y fields are
+        /// axis-transposed relative to that file's own COORD fields AND store north/south as an
+        /// unsigned magnitude, so the hemisphere is unrecoverable from them (verified against 133
+        /// portals present in both data files: 132 match "X=EW signed, Y=|NS|"; see the v1.2.0 notes).
+        /// </summary>
+        public static bool TryParseDisplay(string s, out double ns, out double ew)
+        {
+            ns = 0; ew = 0;
+            if (string.IsNullOrEmpty(s)) return false;
+
+            int i = 0, n = s.Length;
+            double a, b;
+            char ha, hb;
+            if (!ReadPart(s, ref i, out a, out ha)) return false;
+            while (i < n && (s[i] == ',' || char.IsWhiteSpace(s[i]))) i++;
+            if (!ReadPart(s, ref i, out b, out hb)) return false;
+            while (i < n && char.IsWhiteSpace(s[i])) i++;
+            if (i != n) return false;                      // trailing junk
+
+            ha = char.ToUpperInvariant(ha); hb = char.ToUpperInvariant(hb);
+            bool aIsNS = ha == 'N' || ha == 'S';
+            bool bIsNS = hb == 'N' || hb == 'S';
+            if (aIsNS == bIsNS) return false;              // need exactly one NS and one EW part
+
+            double nsMag = aIsNS ? a : b, ewMag = aIsNS ? b : a;
+            char nsH = aIsNS ? ha : hb, ewH = aIsNS ? hb : ha;
+            ns = nsH == 'N' ? nsMag : -nsMag;
+            ew = ewH == 'E' ? ewMag : -ewMag;
+            return true;
+        }
+
+        private static bool ReadPart(string s, ref int i, out double value, out char hemi)
+        {
+            value = 0; hemi = '\0';
+            int n = s.Length;
+            while (i < n && char.IsWhiteSpace(s[i])) i++;
+            int start = i;
+            while (i < n && (char.IsDigit(s[i]) || s[i] == '.')) i++;
+            if (i == start) return false;
+            if (!double.TryParse(s.Substring(start, i - start), NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+                return false;
+            while (i < n && char.IsWhiteSpace(s[i])) i++;
+            if (i >= n) return false;
+            char c = char.ToUpperInvariant(s[i]);
+            if (c != 'N' && c != 'S' && c != 'E' && c != 'W') return false;
+            hemi = s[i]; i++;
+            return true;
+        }
     }
 }

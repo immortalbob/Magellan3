@@ -177,7 +177,7 @@ namespace Magellan.Plugin
         /// "am I actually running the new DLL?" tell from research file 12 sec 6 (a stale locked
         /// DLL is a classic time sink).
         /// </summary>
-        public const string PluginVersion = "1.1.2";
+        public const string PluginVersion = "1.2.0";
 
         private bool _startupOk;
         private bool _bannerShown;
@@ -254,17 +254,13 @@ namespace Magellan.Plugin
         {            _places = PlacesDb.FromFile(System.IO.Path.Combine(_pluginDir, "places.xml"));
             _dungeons = DungeonNames.FromFile(System.IO.Path.Combine(_pluginDir, "dungeon_names.tsv"));
 
-            // Routing data is optional: the portal graph (DEST_COORD_X/Y) only exists in the 2.0.0.2
-            // places file. If it's shipped alongside the plugin, routing lights up; if not, the Route
-            // tab reports that the data is missing and everything else works unchanged.
+            // Routing is built from EXITLOCATION in the SAME places.xml the search tabs use --
+            // places_2.0.0.2.xml is retired (its DEST_COORD fields are axis-transposed and
+            // hemisphere-stripped; see PortalDb for the forensic detail). One data file, one parse.
             try
             {
-                string portalPath = System.IO.Path.Combine(_pluginDir, "places_2.0.0.2.xml");
-                if (System.IO.File.Exists(portalPath))
-                {
-                    var pdb = Magellan.Routing.PortalDb.LoadFromFile(portalPath);
-                    _planner = new Magellan.Routing.RoutePlanner(pdb.Portals);
-                }
+                _planner = new Magellan.Routing.RoutePlanner(
+                    Magellan.Routing.PortalDb.FromPlaces(_places).Portals);
             }
             catch { _planner = null; }
         }
@@ -376,16 +372,17 @@ namespace Magellan.Plugin
             var a = Chk(ref _chkShowMap, "chkShowMap");           if (a != null) a.Checked = _settings.ShowMap;
             var b = Chk(ref _chkFootsteps, "chkFootsteps");       if (b != null) b.Checked = _settings.ShowFootsteps;
             var c = Chk(ref _chkLockRotation, "chkLockRotation"); if (c != null) c.Checked = _settings.LockRotation;
+            var d = Chk(ref _chkRelCoords, "chkRelCoords");        if (d != null) d.Checked = _settings.RelCoords;
 
             // Only allow the frame-loop poll to start reacting to checkbox changes once every checkbox
             // has actually been resolved AND set from the loaded settings. Until then the checkboxes may
             // read their XML defaults, and polling would corrupt the persisted config (see PollCheckboxes).
             //
-            // ONLY the three checkboxes that exist in mainView.xml belong in this gate. The old code
-            // also required chkRelCoords -- which was removed from the XML, so its resolve was ALWAYS
-            // null, the gate never opened, PollCheckboxes never ran, and this method kept re-running
-            // every 200ms overwriting the user's clicks: the Options tab was permanently dead.
-            if (a != null && b != null && c != null)
+            // RULE (v0.7 postmortem): every checkbox in this gate MUST exist in mainView.xml. Gating
+            // on a control that can never resolve means the gate never opens, the poll never runs,
+            // and this method re-runs every 200ms overwriting the user's clicks -- a permanently dead
+            // Options tab. chkRelCoords is back in the XML as of v1.2.0, so it belongs here again.
+            if (a != null && b != null && c != null && d != null)
                 _checkboxesInitialized = true;
         }
 
@@ -534,8 +531,12 @@ namespace Magellan.Plugin
                     changed = true;
                 }
 
-                // (chkRelCoords was removed from the Options tab; _settings.RelCoords is retained for
-                // the relative-coordinate display logic but has no UI toggle at present.)
+                var d = Chk(ref _chkRelCoords, "chkRelCoords");
+                if (d != null && d.Checked != _settings.RelCoords)
+                {
+                    _settings.RelCoords = d.Checked;
+                    changed = true;
+                }
 
                 // Persist the moment anything changes -- don't rely on Shutdown (a client crash or
                 // force-close would otherwise lose the change). Cheap: a tiny XML file, only on a diff.
@@ -847,10 +848,12 @@ namespace Magellan.Plugin
                     var a = Chk(ref _chkShowMap, "chkShowMap");
                     var b = Chk(ref _chkFootsteps, "chkFootsteps");
                     var c = Chk(ref _chkLockRotation, "chkLockRotation");
+                    var d = Chk(ref _chkRelCoords, "chkRelCoords");
                     Chat("checkbox bindings: "
                         + "ShowMap=" + (a != null ? a.Checked.ToString() : "NOT BOUND")
                         + ", Footsteps=" + (b != null ? b.Checked.ToString() : "NOT BOUND")
                         + ", LockRot=" + (c != null ? c.Checked.ToString() : "NOT BOUND")
+                        + ", RelCoords=" + (d != null ? d.Checked.ToString() : "NOT BOUND")
                         + "; init=" + _checkboxesInitialized);
                     Chat("settings now: ShowMap=" + _settings.ShowMap + ", Footsteps=" + _settings.ShowFootsteps
                         + ", LockRot=" + _settings.LockRotation + ", RelCoords=" + _settings.RelCoords);
@@ -899,10 +902,13 @@ namespace Magellan.Plugin
         [MVControlReference("chkShowMap")]      private ICheckBox _chkShowMap = null;
         [MVControlReference("chkFootsteps")]    private ICheckBox _chkFootsteps = null;
         [MVControlReference("chkLockRotation")] private ICheckBox _chkLockRotation = null;
-        // chkRelCoords was fully removed: the control from the XML, the field, the [MVControlEvent]
-        // handler, and its lines in Push/PollCheckboxes. The half-removed version (field + event
-        // attribute left behind) was the root cause of BOTH v0.7 beta bugs -- see the notes on
-        // PushSettingsToCheckboxes and the removed ChkRelCoords_Change below.
+        // chkRelCoords history: removed in v0.7 (half-removed, causing BOTH beta bugs -- a stale
+        // [MVControlEvent] aborting all wireup, and a checkbox-init gate that could never open),
+        // fully deleted in v1.1.x, and RESTORED COMPLETELY in v1.2.0 for parity with the original
+        // Magellan 2, whose Options tab carries "Show overland relative co-ordinates" (recovered
+        // from the 2003 MSI's embedded view XML). Restored means ALL FOUR pieces together: this
+        // field, the XML control, the Change handler, and its lines in Push/PollCheckboxes.
+        [MVControlReference("chkRelCoords")]    private ICheckBox _chkRelCoords = null;
 
         // The always-on coordinate readout, now a StaticText at the top of the main window (a second
         // standalone HudView crashed the client, so it lives in the window VVS already manages).
@@ -999,7 +1005,7 @@ namespace Magellan.Plugin
             {
                 if (_planner == null)
                 {
-                    Chat("Routing data not installed. Place 'places_2.0.0.2.xml' next to the plugin DLL to enable route finding.");
+                    Chat("Routing is unavailable (the portal graph failed to build at startup -- see /mag diag).");
                     return;
                 }
                 if (!_haveRouteStart)
@@ -1078,12 +1084,16 @@ namespace Magellan.Plugin
             catch (Exception ex) { Fail("chkLockRotation", ex); }
         }
 
-        // NOTE: ChkRelCoords_Change was REMOVED along with the checkbox itself. Its [MVControlEvent]
-        // attribute named a control that no longer exists in mainView.xml, and the stock wireup
-        // helper threw on the first unresolvable event target -- aborting event wiring at a
-        // reflection-enumeration-order-dependent point. On some machines that left the ENTIRE main
-        // window rendered but dead (no button/list events wired). Rule going forward: removing a
-        // control from the XML means removing its [MVControlEvent] method in the same commit.
+        // ChkRelCoords_Change is back (v1.2.0) together with its control in mainView.xml. The v0.7
+        // lesson stands: an [MVControlEvent] must never name a control absent from the XML. (The
+        // wireup helper is per-binding tolerant now, so the failure mode is a dead checkbox rather
+        // than a dead window -- but the rule is the rule.)
+        [MVControlEvent("chkRelCoords", "Change")]
+        private void ChkRelCoords_Change(object sender, MVCheckBoxChangeEventArgs e)
+        {
+            try { _settings.RelCoords = e.Checked; SaveSettings(); Chat("[option] Relative coords = " + e.Checked); }
+            catch (Exception ex) { Fail("chkRelCoords", ex); }
+        }
 
         // ---------------------------------------------------------------- list helpers
 

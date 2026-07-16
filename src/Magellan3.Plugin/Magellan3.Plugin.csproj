@@ -82,10 +82,10 @@
       <Link>dungeon_names.tsv</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\..\data\places_2.0.0.2.xml">
-      <Link>places_2.0.0.2.xml</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <!-- places_2.0.0.2.xml is RETIRED as of v1.2.0: routing now builds from EXITLOCATION in
+         places.xml (the old file's DEST_COORD fields are axis-transposed and hemisphere-stripped;
+         see Magellan3.Core/Routing/PortalDb.cs). The file stays in data/ as a historical artifact
+         only and is no longer copied to output or shipped. -->
   </ItemGroup>
 
 </Project>

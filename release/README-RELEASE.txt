@@ -24,12 +24,17 @@ FILES THAT MUST BE PRESENT:
     /mag diag shows FileNotFoundException on every rebuild (v0.8 beta finding).
 
   Data files (included in this folder):
-    places.xml             -- 3,307 places (search / nearby)         REQUIRED
-    dungeon_names.tsv      -- 653 dungeon names (dungeon id)         REQUIRED
-    places_2.0.0.2.xml     -- portal graph (route finding)           optional
+    places.xml             -- 3,307 places; search, nearby, AND the routing
+                              portal graph (via EXITLOCATION)          REQUIRED
+    dungeon_names.tsv      -- 653 dungeon names (dungeon id)           REQUIRED
 
   A missing places.xml or dungeon_names.tsv aborts Startup entirely (no window,
-  no map). places_2.0.0.2.xml only disables the Route tab.
+  no map).
+
+  RETIRED as of v1.2.0: places_2.0.0.2.xml. Routing now builds from the main
+  places.xml. The old file's DEST_COORD fields were proven axis-transposed and
+  hemisphere-stripped against the original 2003 MSIs -- do not ship it, and it
+  is ignored if present.
 
 Also required on the user's machine (NOT shipped here -- they install these):
     Decal 3                (provides Decal.Adapter.dll, Decal.FileService.dll)

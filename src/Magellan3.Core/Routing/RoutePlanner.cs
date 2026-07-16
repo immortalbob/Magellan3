@@ -5,12 +5,12 @@ using Magellan.World;
 namespace Magellan.Routing
 {
     /// <summary>
-    /// One portal from the 2.0.0.2 places database: you enter at (SrcNS, SrcEW) and are dropped at
+    /// One portal edge: you enter at (SrcNS, SrcEW) and are dropped at
     /// (DstNS, DstEW). Both coordinate pairs use the corrected axes (COORD_X = North, COORD_Y = East;
     /// same for DEST_COORD_*).
     ///
     /// The 2.2.0.0 release removed routing (and the DEST_COORD fields from its data). This model is
-    /// populated only from places_2.0.0.2.xml, which carries 149 portals with destination coordinates.
+    /// populated from EXITLOCATION entries in the main places database (203 portals, 169 routable by default; see PortalDb).
     /// </summary>
     public sealed class Portal
     {
