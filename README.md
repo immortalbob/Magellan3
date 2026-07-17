@@ -1,5 +1,4 @@
 # Magellan 3
-![Magellan3](images/magellan3.png)
 
 A 2026 rebuild of **Magellan 2** (Adam Wright, 2003) for **Decal 3** on the **End-of-Retail**
 Asheron's Call client: a places database, dungeon identification, on-screen coordinates, and a
@@ -16,6 +15,58 @@ GoArrow already does places and dungeon maps — but its dungeon maps are raster
 from a CDN that no longer exists. Magellan **generates** its map from `client_cell_1.dat` at
 runtime, so it works offline and maps custom ACE-server dungeons nobody has ever drawn. That is the
 differentiator; nostalgia is not.
+
+## What's new in v1.2.1
+
+A diagnostics-and-visibility release, driven by one field report: "the dungeon map draws but the
+main window draws nothing (unless I hover it)". Both windows render through the same VVS -> Direct3D
+pipeline, so a working map exonerates the machine's DirectX stack -- the causes live in the windowing
+layer, and none of them were observable in-game before this release:
+
+- **The login banner and `/mag diag` now name the main window's renderer.** `ViewSystemSelector`'s
+  auto-detect is a point-in-time snapshot at Startup (char-select): VVS must be **loaded and
+  `Service.Running`** at that instant, or the window silently falls back to the legacy Decal-injected
+  renderer. The automap overlay hard-references VVS and skips the check -- so a bad snapshot produces
+  the machine-specific "map fine, main window broken" split. Worse, a legacy-renderer window is
+  subject to Decal's "Disable View Rendering" option (common advice for VVS users): with that on, the
+  fallen-back window draws NOTHING while the plugin runs normally. The banner reports the chosen
+  backend plus the VVS state seen at startup vs now, so the fallback can never be silent again.
+- **Automatic backend upgrade at login.** If Startup picked the legacy renderer but VVS is running by
+  first login, the main window is rebuilt on VVS (one shot, fully guarded; control caches cleared and
+  wireup re-run).
+- **New `/mag reset`.** Restores both windows to a known-visible, clickable state: on-screen
+  positions, un-pinned, click-through off, full alpha. VVS persists per-window presentation state
+  *outside* the plugin -- the title-bar thumbtack pins ("hudifies") a window, stripping its border;
+  pinned windows can be made click-through; un-pinning requires holding LEFT-CTRL while clicking the
+  thumbtack (virindi.net wiki). A window pinned or faded months ago therefore looks dead through
+  every update; the login banner now warns when that state is detected, and `/mag reset` clears it
+  from chat -- the only recovery path that works on a click-through window. Reset restores window
+  *size* too: VVS persists user-resized dimensions (vvs.s3db `UserW`/`UserH`), so a window once
+  shrunk to its title bar stays that way until reset. `/mag diag` prints Magellan's exact vvs.s3db
+  row keys for out-of-game repair (see README-RELEASE's troubleshooting section).
+- **The map overlay no longer force-moves itself on first show.** It only rescues a window that is
+  actually unplaced/off-screen, so a user's saved position is respected -- and the overlay can't park
+  itself on top of the main window every session.
+
+## What's new in v1.2.0
+
+Routing was rebuilt after a forensic audit against the original 2003 installers, an original feature
+came back, and a batch of polish landed:
+
+- **Route planning is correct now.** It had been geometrically wrong since the feature first shipped:
+  the old `places_2.0.0.2.xml` destination fields are axis-transposed *and* drop the north/south
+  hemisphere entirely (verified against both 2003 MSIs — 132 of 133 cross-checkable portals).
+  Routing now builds from the signed `EXITLOCATION` data in the main `places.xml`: correct
+  destinations and a bigger graph — **169** deterministic portal edges, up from 149. Random portals
+  are excluded (their in-game exit isn't predictable), and `places_2.0.0.2.xml` is retired.
+- **Restored: "Show overland relative co-ordinates."** Recovered to its true 2003 behaviour — check
+  it, click any place in Search or Nearby, and the top readout becomes a live
+  `Distance to <place>: 2.3N, 1.1E` tracker that updates as you move and ticks toward zero on arrival.
+- **The coordinate readout and About title render yellow** as intended (the old colour value was in
+  the wrong byte order and displayed cyan), and the About tab no longer truncates mid-sentence.
+- **Search and Nearby report their result count in chat** ("7 places for 'holt'" / "No places
+  match…"), so an empty search is never mistaken for a dead button, and the login banner shows the
+  version — a quick check that you're on the new build.
 
 ## Layout
 
@@ -37,7 +88,7 @@ Magellan3.sln
 │       ├── Ui/MapOverlay.cs        borderless heading-up HUD, bake-once/blit-per-frame
 │       ├── VirindiViews/           MetaViewWrappers shim (MIT, from Mag-nus/DecalPluginTemplates)
 │       └── Resources/mainView.xml  the RECOVERED view, verbatim, embedded
-├── tests/Magellan3.Tests/     net8.0 — 59 tests, no packages, runs anywhere
+├── tests/Magellan3.Tests/     net8.0 — 73 tests, no packages, runs anywhere
 ├── data/                      places.xml · dungeon_names.tsv · mainView.xml
 └── run-tests.sh               offline test runner (no NuGet feed needed)
 ```
@@ -48,7 +99,7 @@ Everything that can be tested without a game is in `Core`, and it is.
 ## Test
 
 ```bash
-./run-tests.sh        # 59/59, no NuGet feed required
+./run-tests.sh        # 73/73, no NuGet feed required
 ```
 
 Or, with a feed available:
@@ -78,10 +129,10 @@ floor-outline seam-cancellation against a two-cell room that must read as one ou
    - `Magellan3.dll` — the plugin
    - `Magellan3.Core.dll` — its logic library
    - `DatReaderWriter.dll` — the DAT reader (for the automap)
-   - `places.xml`, `dungeon_names.tsv`, `places_2.0.0.2.xml` — the places, dungeon-name, and routing data
+   - `places.xml`, `dungeon_names.tsv` — the places and dungeon-name data (routing builds from `places.xml` too)
 2. Put **all of those files together** in one folder (e.g. `C:\Games\Magellan3\`). They must sit
    side by side — the plugin loads the data files from beside the DLL, and won't work with just the DLL.
-3. Register the plugin (magellan3.dll) with Decal, or use the **32-bit** RegAsm, run from that folder as **Administrator**:
+3. Register the plugin with the **32-bit** RegAsm, run from that folder as **Administrator**:
    ```
    C:\Windows\Microsoft.NET\Framework\v4.0.30319\RegAsm.exe /codebase Magellan3.dll
    ```
@@ -91,7 +142,7 @@ floor-outline seam-cancellation against a two-cell room that must read as one ou
 5. The Magellan window opens from its icon in the VVS bar. Search a place, enter a dungeon to see
    the automap, or run `/mag diag` to check status.
 
-Settings you change (Show map, footsteps, lock rotation) are saved automatically to
+Settings you change (Show map, footsteps, lock rotation, relative co-ordinates) are saved automatically to
 `%AppData%\Magellan3\config.xml` and persist across logins.
 
 ## Build from source (Windows)
@@ -102,7 +153,7 @@ Requires Visual Studio / `dotnet` on Windows, an installed Decal 3 and VVS, and 
    installed `Decal.Adapter.dll`, `Decal.FileService.dll`, and `VirindiViewService.dll`.
 2. `dotnet build src\Magellan3.Plugin\Magellan3.Plugin.csproj -c Release` (or build the solution in
    VS; the plugin is `Release|x86`). `Chorizite.DatReaderWriter` restores from NuGet. The build copies
-   the three data files (`places.xml`, `dungeon_names.tsv`, `places_2.0.0.2.xml`) next to the DLL.
+   the two data files (`places.xml`, `dungeon_names.tsv`) next to the DLL (routing builds from `places.xml`).
 3. Copy `Decal.Adapter.dll`, `Decal.FileService.dll`, and `VirindiViewService.dll` next to the built
    `Magellan3.dll`, then register with the **32-bit** RegAsm as Administrator, from `bin\Release`:
    ```
@@ -112,7 +163,7 @@ Requires Visual Studio / `dotnet` on Windows, an installed Decal 3 and VVS, and 
 5. In-game, run **`/mag diag`** for status, or **`/mag phase`** to verify the DAT read (see below).
 
 The automap is on by default (`MAGELLAN_AUTOMAP` in `<DefineConstants>`); the logic layer is covered
-by `run-tests.sh` (67 tests), which runs on any platform without Decal, VVS, or NuGet.
+by `run-tests.sh` (73 tests), which runs on any platform without Decal, VVS, or NuGet.
 
 ### One thing to verify in-game, once
 
@@ -136,16 +187,17 @@ note in `Mapping/DatSource.cs`.
 | Click a result → coordinates in chat | **done, working in-game** |
 | Dungeon identification (653 names) | **done, working in-game** |
 | Always-on coordinate readout (top of window) | **done, working in-game** |
-| Route finding (149-portal Dijkstra) | **done, working in-game** |
+| "Relative co-ordinates" distance tracker (Options tab) | **done, working in-game** — live distance-to-selected-place readout |
+| Route finding (169-portal Dijkstra) | **done, working in-game** |
 | Automatic dungeon mapping (the automap) | **done, working in-game** — reads `client_cell_1.dat` at runtime |
 | Footstep trail (Z-sliced by floor) | **done, working in-game** |
 | Settings persist across logins | **done** — saved to `%AppData%\Magellan3\config.xml` |
 
 Every original Magellan 2 feature is present, plus a 653-name dungeon database (vs the original's
-117), Z-sliced trails, and an About tab. The full logic layer is unit-tested (`run-tests.sh`, 67
-tests). The one thing that differs from the original by necessity: the on-screen coordinate readout
-lives at the top of the plugin window rather than as a separate floating overlay (a second VVS
-window proved unstable on the current client).
+118), Z-sliced trails, the restored "relative co-ordinates" distance tracker, and an About tab. The
+full logic layer is unit-tested (`run-tests.sh`, 73 tests). The one thing that differs from the
+original by necessity: the on-screen coordinate readout lives at the top of the plugin window rather
+than as a separate floating overlay (a second VVS window proved unstable on the current client).
 
 ## Credits
 

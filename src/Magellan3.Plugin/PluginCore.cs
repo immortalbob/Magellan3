@@ -152,6 +152,18 @@ namespace Magellan.Plugin
                 try { MVWireupHelper.WireupStart(this, Host); }
                 catch (Exception ex) { Fail("view wireup", ex); }
 
+                // Record WHICH renderer actually built the main window, and the VVS state this
+                // instant. ViewSystemSelector's auto-detect is a point-in-time snapshot taken here,
+                // at char-select: it requires VirindiViewService >= 1.0.0.37 ALREADY LOADED and
+                // Service.Running == true, and on a miss it falls back to the legacy Decal-injected
+                // renderer with no error. The automap overlay hard-references VVS and skips that
+                // check entirely -- so the failure signature of a bad snapshot is machine-specific
+                // and maddening: dungeon map draws fine, main window doesn't. A beta tester lost a
+                // release cycle to exactly this split, blaming his DirectX DLLs. Both lines are
+                // reported in the login banner and /mag diag so it can never be silent again.
+                DetectViewBackend();
+                _vvsStateAtStartup = ProbeVvsState();
+
                 // OnUpdateCell (rebuild the map as the client streams cells in) is an OPTIMISATION,
                 // not a requirement -- it removes the original's "map appears on second visit" quirk.
                 // The concrete FileService in this Decal build may expose it as a COM event rather
@@ -177,10 +189,13 @@ namespace Magellan.Plugin
         /// "am I actually running the new DLL?" tell from research file 12 sec 6 (a stale locked
         /// DLL is a classic time sink).
         /// </summary>
-        public const string PluginVersion = "1.2.0";
+        public const string PluginVersion = "1.2.1";
 
         private bool _startupOk;
         private bool _bannerShown;
+        private string _viewBackend = "unknown";     // which renderer built the main window ("VVS" / "legacy DecalInject")
+        private string _vvsStateAtStartup = "not probed"; // VVS assembly/Running snapshot when the backend was chosen
+        private bool _backendRetryDone;              // one-shot guard for the LoginComplete VVS re-create
         private bool _checkboxesInitialized;   // true once checkboxes have been set from loaded settings
         private bool _eventWiringDone;         // true once no [MVControlEvent] bindings remain pending
         private int _lastEventRetryTick;
@@ -280,7 +295,7 @@ namespace Magellan.Plugin
                         Chat("Magellan 3 v" + PluginVersion + " loaded. " + _places.All.Count + " places, " + _dungeons.Count + " dungeon names.");
                         if (_places.CorrectionsApplied > 0)
                             Chat("Repaired " + _places.CorrectionsApplied + " off-map coordinate(s) at load.");
-                        Chat("Commands: /mag phase (verify DAT read), /mag diag (status), /mag map (toggle map).");
+                        Chat("Commands: /mag phase (verify DAT read), /mag diag (status), /mag map (toggle map), /mag reset (restore windows).");
                     }
                     else
                     {
@@ -301,6 +316,15 @@ namespace Magellan.Plugin
                             Chat("view " + report);
                     }
                     catch { }
+
+                    // The two lines that close the "map draws, main window doesn't" report class:
+                    // which renderer owns the main window (a silent DecalInject fallback is a bug on
+                    // any machine with working VVS -- and fixable right now, see TryUpgradeBackendToVvs),
+                    // and whether VVS's own persisted ghost/alpha state has made the window invisible.
+                    Chat("main window backend: " + _viewBackend
+                         + " (startup saw: " + _vvsStateAtStartup + "; now: " + ProbeVvsState() + ")");
+                    TryUpgradeBackendToVvs();
+                    WarnIfMainWindowInvisible();
                 }
 
                 PushSettingsToCheckboxes();
@@ -384,6 +408,157 @@ namespace Magellan.Plugin
             // Options tab. chkRelCoords is back in the XML as of v1.2.0, so it belongs here again.
             if (a != null && b != null && c != null && d != null)
                 _checkboxesInitialized = true;
+        }
+
+        // ---------------------------------------------------------------- view backend diagnostics
+        //
+        // Everything in this block exists because of one field report: "map draws, main window
+        // doesn't". The main window's renderer is chosen once, silently, at Startup; the per-window
+        // VVS presentation state (ghost/alpha) is owned by VVS, persisted outside the plugin, and
+        // survives every update. Neither was observable in-game before v1.2.1. All probes are
+        // reflection-based so they compile and run against either backend and any VVS build.
+
+        /// <summary>Classify the main view's backend via the wrapper's own type split. Never throws.</summary>
+        private void DetectViewBackend()
+        {
+            try
+            {
+                var view = MVWireupHelper.GetDefaultView(this);
+                if (view == null) { _viewBackend = "none (view creation failed)"; return; }
+                string backend = "unknown (" + view.GetType().Name + ")";
+                ViewSystemSelector.ViewConditionalSplit(view,
+                    delegate (object d) { backend = "legacy DecalInject"; },
+                    delegate (object d) { backend = "VVS"; }, null);
+                _viewBackend = backend;
+            }
+            catch (Exception ex) { _viewBackend = "unknown (" + ex.GetType().Name + ")"; }
+        }
+
+        /// <summary>
+        /// One-line VVS state: assembly version if loaded, and Service.Running. Reflection only --
+        /// works whether or not VVS is referenced, loaded, or running, and can be called repeatedly
+        /// (the Startup snapshot vs the login re-probe is exactly the diagnostic).
+        /// </summary>
+        private string ProbeVvsState()
+        {
+            try
+            {
+                foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    var nm = a.GetName();
+                    if (nm.Name != "VirindiViewService") continue;
+                    string running = "?";
+                    try
+                    {
+                        var t = a.GetType("VirindiViewService.Service");
+                        var p = t != null ? t.GetProperty("Running", BindingFlags.Public | BindingFlags.Static) : null;
+                        if (p != null) running = "" + p.GetValue(null, null);
+                    }
+                    catch { }
+                    return "VVS " + nm.Version + ", Running=" + running;
+                }
+                return "VVS assembly not loaded";
+            }
+            catch (Exception ex) { return "VVS probe failed: " + ex.Message; }
+        }
+
+        /// <summary>
+        /// If Startup picked the legacy renderer but VVS is running by first login (it hooks the
+        /// client on its own schedule; the Startup snapshot can simply be too early on some
+        /// machines), rebuild the main window on VVS. One shot, fully guarded -- a failure leaves
+        /// the legacy window in place, which is the pre-v1.2.1 behaviour.
+        /// </summary>
+        private void TryUpgradeBackendToVvs()
+        {
+            if (_backendRetryDone) return;
+            _backendRetryDone = true;
+            try
+            {
+                if (!_viewBackend.StartsWith("legacy")) return;
+                if (!ViewSystemSelector.IsPresent(Host, ViewSystemSelector.eViewSystem.VirindiViewService))
+                {
+                    Chat("main window is on the legacy Decal renderer and VVS is still not running -- "
+                         + "check Decal Agent > Services has 'Virindi View Service' ENABLED (>= 1.0.0.37), then relog. "
+                         + "NOTE: if Decal's 'Disable View Rendering' option is on, a legacy-renderer window draws NOTHING at all.");
+                    return;
+                }
+
+                // The cached control wrappers all point into the view we're about to dispose;
+                // clear them BEFORE re-wireup or every lazy resolver keeps handing back the dead
+                // view's controls. WireupStart itself disposes the previous views (it calls
+                // WireupEnd on re-entry), then auto-detects again -- picking VVS this time.
+                ResetControlCache();
+                MVWireupHelper.WireupStart(this, Host);
+                DetectViewBackend();
+                _checkboxesInitialized = false;
+                _eventWiringDone = false;
+                PushSettingsToCheckboxes();
+                Chat("main window rebuilt on: " + _viewBackend + " (VVS came up after startup).");
+            }
+            catch (Exception ex) { Fail("backend retry", ex); }
+        }
+
+        /// <summary>Null every cached control reference (startup-bound and lazily-resolved alike).</summary>
+        private void ResetControlCache()
+        {
+            _txtQuery = null; _lstResults = null; _txtProxQuery = null; _lstProxResults = null;
+            _txtInfo = null; _txtLoc = null; _txtType = null; _txtRestriction = null; _txtNotes = null;
+            _chkShowMap = null; _chkFootsteps = null; _chkLockRotation = null; _chkRelCoords = null;
+            _txtCoordReadout = null; _txtRouteStart = null; _txtRouteEnd = null; _lstRouteResults = null;
+        }
+
+        /// <summary>
+        /// Read the main window's per-window VVS presentation state (Ghosted / Alpha) by
+        /// reflection. VVS persists this OUTSIDE the plugin, so it survives every update; a
+        /// ghosted or near-transparent window renders (essentially) nothing until the mouse is
+        /// over it -- which the user reports as "the window draws nothing", not as "I ghosted it
+        /// months ago". suspicious=true when the state would make the window invisible at rest.
+        /// On the legacy backend the properties don't exist and this reports n/a.
+        /// </summary>
+        private string MainWindowPresentation(out bool suspicious)
+        {
+            suspicious = false;
+            try
+            {
+                var view = MVWireupHelper.GetDefaultView(this);
+                var up = view != null ? view.GetType().GetProperty("Underlying") : null;
+                object hud = up != null ? up.GetValue(view, null) : null;
+                if (hud == null) return "n/a (no underlying view)";
+
+                object ghosted = null, alpha = null, clickThrough = null;
+                try { var p = hud.GetType().GetProperty("Ghosted"); if (p != null) ghosted = p.GetValue(hud, null); } catch { }
+                try { var p = hud.GetType().GetProperty("Alpha"); if (p != null) alpha = p.GetValue(hud, null); } catch { }
+                try { var p = hud.GetType().GetProperty("ClickThrough"); if (p != null) clickThrough = p.GetValue(hud, null); } catch { }
+
+                bool g = (ghosted is bool) && (bool)ghosted;
+                bool ct = (clickThrough is bool) && (bool)clickThrough;
+                int aVal = -1;
+                try { if (alpha != null) aVal = Convert.ToInt32(alpha); } catch { }
+                // Pinned ("hudified": no border/title bar), click-through (no mouse input), or
+                // faded-to-invisible all read to the user as a dead or missing window -- and none
+                // can be fixed by mouse alone without knowing the left-ctrl tricks (virindi.net
+                // wiki, "Customize Your View"). Flag any of them.
+                suspicious = g || ct || (aVal >= 0 && aVal < 60);
+
+                return "ghosted=" + (ghosted != null ? ghosted.ToString() : "?")
+                     + ", clickthrough=" + (clickThrough != null ? clickThrough.ToString() : "?")
+                     + ", alpha=" + (alpha != null ? alpha.ToString() : "?");
+            }
+            catch (Exception ex) { return "probe failed: " + ex.Message; }
+        }
+
+        private void WarnIfMainWindowInvisible()
+        {
+            try
+            {
+                bool bad;
+                string state = MainWindowPresentation(out bad);
+                if (bad)
+                    Chat("WARNING: the main window is " + state
+                         + " -- pinned/click-through/faded windows look dead or missing. /mag reset restores it"
+                         + " (by hand: hold LEFT-CTRL and click the title-bar thumbtack to un-pin).");
+            }
+            catch { }
         }
 
         // Reflectively attached OnUpdateCell delegate, if the event exists in this Decal build.
@@ -882,9 +1057,45 @@ namespace Magellan.Plugin
                 {
                     RunDiagnostics();
                 }
+                else if (arg.Equals("reset", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Restore both windows to a known-visible state: on-screen position, un-ghosted,
+                    // opaque. This is the escape hatch for per-window VVS state the plugin doesn't
+                    // own -- a window ghosted or alpha'd to invisible months ago survives every
+                    // plugin update, and its owner reports it as "the window draws nothing".
+                    try
+                    {
+                        var view = MVWireupHelper.GetDefaultView(this);
+                        if (view != null)
+                        {
+                            // Position (not just Location): VVS persists user-resized dimensions in
+                            // vvs.s3db (UserW/UserH), so a window once dragged down to its title bar
+                            // stays ~26px tall forever. Reset restores the designed size too.
+                            try { view.Position = new System.Drawing.Rectangle(80, 80, 270, 360); }
+                            catch { try { view.Location = new System.Drawing.Point(80, 80); } catch { } }
+                            var up = view.GetType().GetProperty("Underlying");
+                            object hud = up != null ? up.GetValue(view, null) : null;
+                            if (hud != null)
+                            {
+                                // Reflection: these properties exist on VVS HudView only, and their
+                                // exact numeric type may vary by VVS build. Best-effort each.
+                                // Clearing ClickThrough matters most: a pinned+click-through window
+                                // takes no mouse input, so chat is the only recovery path.
+                                try { var p = hud.GetType().GetProperty("Ghosted"); if (p != null && p.CanWrite) p.SetValue(hud, false, null); } catch { }
+                                try { var p = hud.GetType().GetProperty("ClickThrough"); if (p != null && p.CanWrite) p.SetValue(hud, false, null); } catch { }
+                                try { var p = hud.GetType().GetProperty("Alpha"); if (p != null && p.CanWrite) p.SetValue(hud, Convert.ChangeType(255, p.PropertyType), null); } catch { }
+                            }
+                        }
+                        if (_overlay != null) _overlay.ResetPresentation();
+                        bool ignored;
+                        Chat("windows reset: main window @ (80,80), " + MainWindowPresentation(out ignored)
+                             + "; map overlay repositioned. If the main window is still missing, check /mag diag's backend line.");
+                    }
+                    catch (Exception ex) { Fail("reset", ex); }
+                }
                 else
                 {
-                    Chat("Magellan: /mag map (toggle dungeon map)  /mag phase (verify DAT read)  /mag diag (status). Use the Magellan window for search.");
+                    Chat("Magellan: /mag map (toggle dungeon map)  /mag phase (verify DAT read)  /mag diag (status)  /mag reset (restore window positions/visibility). Use the Magellan window for search.");
                 }
             }
             catch (Exception ex) { Fail("CommandLineText", ex); }
@@ -1286,6 +1497,19 @@ namespace Magellan.Plugin
                 Chat("automap: not compiled (define MAGELLAN_AUTOMAP for the dungeon map).");
 #endif
                 try { Chat("  " + MVWireupHelper.GetWireupReport(this)); } catch { }
+                try
+                {
+                    bool bad;
+                    Chat("main window backend: " + _viewBackend + "; presentation: " + MainWindowPresentation(out bad)
+                         + (bad ? "  <-- effectively invisible; /mag reset" : ""));
+                    Chat("vvs: startup saw " + _vvsStateAtStartup + "; now " + ProbeVvsState());
+                    // The exact keys of our rows in VVS's persistence db (vvs.s3db, StoredViewInfo,
+                    // in the VVS install folder). Keyed "<AssemblyName>:<title at view creation>";
+                    // support can inspect/heal/delete these rows with the CLIENT CLOSED. A missing
+                    // row after real use = the window has been on the legacy Decal backend.
+                    Chat("vvs.s3db view keys: 'Magellan3:Magellan 3', 'Magellan3:Magellan Map' (edit only with AC closed)");
+                }
+                catch { }
                 try
                 {
                     Chat("config: " + (_configPath ?? "(none)") + (System.IO.File.Exists(_configPath) ? " [exists]" : " [not yet written]"));

@@ -24,6 +24,12 @@ namespace Magellan.Plugin.Ui
         void SetGeometry(DungeonGeometry geo, float px, float py, float pz, float headingDeg);
         void SetFrameState(DungeonGeometry geo, float px, float py, float pz, float headingDeg, string caption);
         void SetTitle(string title);
+
+        /// <summary>
+        /// Restore the overlay window to a known-visible state (on-screen position, un-ghosted,
+        /// opaque) -- the /mag reset escape hatch for per-window VVS state the plugin doesn't own.
+        /// </summary>
+        void ResetPresentation();
         string Status { get; }   // human-readable diagnostic: is the view created? did CreateView throw?
     }
 
@@ -38,6 +44,7 @@ namespace Magellan.Plugin.Ui
         public void SetGeometry(DungeonGeometry geo, float px, float py, float pz, float headingDeg) { }
         public void SetFrameState(DungeonGeometry geo, float px, float py, float pz, float headingDeg, string caption) { }
         public void SetTitle(string title) { }
+        public void ResetPresentation() { }
         public string Status { get { return "null overlay (automap not compiled)"; } }
         public void Dispose() { }
     }

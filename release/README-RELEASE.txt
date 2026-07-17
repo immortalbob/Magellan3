@@ -43,3 +43,30 @@ Also required on the user's machine (NOT shipped here -- they install these):
 
 To build the release zip: copy every DLL from bin\Release into this folder
 alongside the data files, then zip the whole folder.
+
+TROUBLESHOOTING: "the main window draws nothing" / "a window is gone"
+=====================================================================
+
+In-game, in this order:
+  1. /mag diag   -- read the "main window backend" line. "legacy DecalInject" on a
+     machine with a working dungeon map means VVS wasn't running when the plugin
+     started: check Decal Agent > Services has 'Virindi View Service' enabled,
+     and note that Decal's 'Disable View Rendering' option makes a legacy-backend
+     window draw nothing at all.
+  2. /mag reset  -- restores both windows' position, size, un-pins them, turns
+     click-through off. (The title-bar thumbtack "pins" a window -- border
+     removed, locked; un-pinning by hand needs LEFT-CTRL + click on it.)
+
+If a window is still wrong, VVS's own saved state can be edited directly.
+VVS persists per-window state (position, size, pinned, click-through, hidden,
+theme) in an SQLite database in the VirindiViewService install folder:
+
+    vvs.s3db  ->  table StoredViewInfo, keyed by "<Assembly>:<Window title>"
+
+Magellan's rows are 'Magellan3:Magellan 3' and 'Magellan3:Magellan Map'.
+WITH AC CLOSED, either fix the flags:
+    UPDATE StoredViewInfo SET Ghost=0, ClickThrough=0, Enabled=1
+     WHERE ViewKey LIKE 'Magellan3:%';
+or delete the rows for factory-fresh windows:
+    DELETE FROM StoredViewInfo WHERE ViewKey LIKE 'Magellan3:%';
+This touches only Magellan's windows; other plugins keep their layouts.

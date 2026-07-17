@@ -42,10 +42,19 @@ namespace Magellan.Plugin.Ui
                 if (_view == null) return;
                 if (value && !_placed)
                 {
-                    // First show: make sure the window sits somewhere visible. A freshly-created VVS
-                    // HudView with no saved settings can land at (0,0) or off-screen; nudge it on-screen.
-                    try { _view.Location = new Point(200, 200); } catch { }
                     _placed = true;
+                    // First show: rescue ONLY a window that is actually unplaced or off-screen (a
+                    // fresh HudView with no saved settings lands at (0,0); a stale save can be
+                    // negative). The old code force-moved to a fixed point every session, which
+                    // (a) clobbered the position LoadUserSettings had just restored and (b) could
+                    // park the map squarely on top of the main window -- which then reads as "the
+                    // main window draws nothing" whenever a dungeon map is up. Respect a real save.
+                    try
+                    {
+                        var loc = _view.Location;
+                        if (loc.X <= 0 && loc.Y <= 0) _view.Location = DefaultLocation;
+                    }
+                    catch { }
                 }
                 _view.Visible = value;
                 // The map's viewbar icon should only appear while the map itself is shown -- so the
@@ -55,6 +64,29 @@ namespace Magellan.Plugin.Ui
             }
         }
         private bool _placed;
+
+        // Default spot: clear of the top-left region where the main tabbed window typically sits,
+        // still on-screen at 800x600 (the overlay is Size_ wide; 420 + 300 = 720 < 800).
+        private static readonly Point DefaultLocation = new Point(420, 100);
+
+        /// <summary>
+        /// /mag reset: put the window somewhere visible and strip any persisted ghost/zero-alpha
+        /// state. Ghosted/Alpha are set by REFLECTION: they exist on HudView per the reflected
+        /// metadata (research file 03 sec 10.7), but their presence/numeric type may vary by VVS
+        /// build, and a reset helper must never be the thing that fails to compile or throws.
+        /// </summary>
+        public void ResetPresentation()
+        {
+            if (_view == null) return;
+            try { _view.Location = DefaultLocation; } catch { }
+            // VVS persists user size (vvs.s3db UserW/UserH) -- restore the designed dimensions too.
+            try { _view.ClientArea = new Size(Size_, Size_); } catch { }
+            try { var p = _view.GetType().GetProperty("Ghosted"); if (p != null && p.CanWrite) p.SetValue(_view, false, null); } catch { }
+            try { var p = _view.GetType().GetProperty("ClickThrough"); if (p != null && p.CanWrite) p.SetValue(_view, false, null); } catch { }
+            try { var p = _view.GetType().GetProperty("Alpha"); if (p != null && p.CanWrite) p.SetValue(_view, Convert.ChangeType(255, p.PropertyType), null); } catch { }
+            if (_emu != null) { try { _emu.Invalidate(); } catch { } }
+        }
+
         private string _status = "not created";
         public string Status { get { return _status + (_view != null ? "; view=OK" : "; view=NULL") + (_emu != null ? "; emu=OK" : "; emu=NULL") + "; drawCalls=" + _drawCalls + "; drawErr=" + _drawErrors + (_lastDrawErr.Length > 0 ? "(" + _lastDrawErr + ")" : "") + "; geo=" + (_liveGeo != null ? _liveGeo.Edges.Count + " edges" : "none"); } }
 
