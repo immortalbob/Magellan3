@@ -16,6 +16,35 @@ from a CDN that no longer exists. Magellan **generates** its map from `client_ce
 runtime, so it works offline and maps custom ACE-server dungeons nobody has ever drawn. That is the
 differentiator; nostalgia is not.
 
+## What's new in v1.2.4
+
+- **The main window is resizable** -- drag the corner; taller is the point (long search/route
+  result lists). VVS sizes nothing automatically, so the plugin re-flows the notebook and all
+  three lists to the new client size (~5 Hz poll, no-op when unchanged), keeping the design's
+  margins. Your chosen size persists across sessions (VVS stores it in vvs.s3db); `/mag reset`
+  returns the window to the stock 270x360.
+- **List columns re-flow too, and coordinates are never clipped.** VVS fixes column widths at
+  parse time (a resized list kept its original narrow coords column), so on every list resize the
+  plugin redistributes widths via `HudList.SetColumnWidth`: the coords column is pinned at 92px
+  (widest possible coordinate fits) and the NAME column absorbs all remaining width -- so
+  widening the window now lengthens names, and coords are complete even at stock size.
+
+## What's new in v1.2.3
+
+The v1.2.2 field result was decisive in the unexpected direction: the full texture self-test came
+back GREEN on the affected machine while its window body stayed blank -- and a follow-up screenshot
+showed garbled, double-struck glyphs. Freshly-created textures work; what's dead is VVS's *cached*
+GPU resources (theme element textures, the glyph atlas) -- the classic result of a D3D device
+loss/reset that the caches didn't survive. Two additions to test and fix that in-game:
+
+- **`/mag theme`** -- `reload` assigns a brand-new instance of the current theme (same look),
+  forcing VVS to rebuild its element textures without a client restart; `<name>` switches themes;
+  bare `theme` lists what's available. All reflective and guarded.
+- **`/mag diag` counts D3D device losses** (via `VirindiViewService.Service.DeviceLost`). Blank or
+  garbled UI + green self-test + a nonzero count = stale caches after a reset; a machine that racks
+  up losses (fullscreen alt-tab, resolution changes) against a healthy machine's 0 is the smoking
+  gun. Windowed mode is the standing workaround if confirmed.
+
 ## What's new in v1.2.2
 
 Follow-up from the first v1.2.1 field diag, which cleared the backend/wireup/ghost/alpha layers on

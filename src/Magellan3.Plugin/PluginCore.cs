@@ -71,6 +71,11 @@ namespace Magellan.Plugin
             try { CoreManager.Current.CommandLineText += CoreManager_CommandLineText; }
             catch (Exception ex) { Fail("hook CommandLineText", ex); }
 
+            // Count D3D device losses (reflective, optional): the affected-machine fingerprint is
+            // stale cached GPU resources -- blank theme elements, garbled glyph atlas -- while
+            // freshly-created textures test fine. The count discriminates in one diag line.
+            TryHookDeviceLost();
+
             // RenderFrame drives the live automap: it fires every rendered frame, so we poll the
             // player's position/heading here (throttled, cheap-only) and the overlay repaints. Without
             // it the map draws once and goes static. Subscribed REFLECTIVELY and optionally: if this
@@ -189,7 +194,7 @@ namespace Magellan.Plugin
         /// "am I actually running the new DLL?" tell from research file 12 sec 6 (a stale locked
         /// DLL is a classic time sink).
         /// </summary>
-        public const string PluginVersion = "1.2.2";
+        public const string PluginVersion = "1.2.4";
 
         private bool _startupOk;
         private bool _bannerShown;
@@ -227,6 +232,7 @@ namespace Magellan.Plugin
                 }
                 TryUnhookRenderFrame();
                 TryUnhookUpdateCell();
+                TryUnhookDeviceLost();
 
                 MVWireupHelper.WireupEnd(this);
                 if (_overlay != null) _overlay.Dispose();
@@ -328,6 +334,7 @@ namespace Magellan.Plugin
                 }
 
                 PushSettingsToCheckboxes();
+                EnableMainWindowResize();   // idempotent; the frame poll re-flows controls to fit
                 RefreshLandblock(force: true);
             }
             catch (Exception ex) { Fail("LoginComplete", ex); }
@@ -493,6 +500,7 @@ namespace Magellan.Plugin
                 _checkboxesInitialized = false;
                 _eventWiringDone = false;
                 PushSettingsToCheckboxes();
+                EnableMainWindowResize();
                 Chat("main window rebuilt on: " + _viewBackend + " (VVS came up after startup).");
             }
             catch (Exception ex) { Fail("backend retry", ex); }
@@ -505,6 +513,7 @@ namespace Magellan.Plugin
             _txtInfo = null; _txtLoc = null; _txtType = null; _txtRestriction = null; _txtNotes = null;
             _chkShowMap = null; _chkFootsteps = null; _chkLockRotation = null; _chkRelCoords = null;
             _txtCoordReadout = null; _txtRouteStart = null; _txtRouteEnd = null; _lstRouteResults = null;
+            _layoutW = int.MinValue; _layoutH = int.MinValue; _layoutApplied.Clear();   // stale rects die with the view
         }
 
         /// <summary>
@@ -550,6 +559,237 @@ namespace Magellan.Plugin
                      + ", alpha=" + (alpha != null ? alpha.ToString() : "?");
             }
             catch (Exception ex) { return "probe failed: " + ex.Message; }
+        }
+
+        // ---- D3D device-loss tracking (reflection over VirindiViewService.Service.DeviceLost) ----
+        //
+        // Theory under test (v1.2.2 field data): on the affected machine the texture self-test is
+        // fully green WHILE theme elements don't draw -- so textures created NOW work, and the
+        // dead things are VVS's CACHED theme-element textures, i.e. resources created earlier and
+        // not surviving/being recreated after a device loss. Counting DeviceLost events makes that
+        // visible: a machine that racks up device losses (fullscreen alt-tabs, res changes) while a
+        // healthy one shows 0 is the smoking gun.
+        private int _deviceLostCount;
+        private bool _deviceLostHooked;
+        private Delegate _deviceLostDelegate;
+
+        private void TryHookDeviceLost()
+        {
+            try
+            {
+                foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (a.GetName().Name != "VirindiViewService") continue;
+                    var t = a.GetType("VirindiViewService.Service");
+                    var ev = t != null ? t.GetEvent("DeviceLost") : null;
+                    if (ev == null) return;
+                    var mi = typeof(PluginCore).GetMethod(nameof(Service_DeviceLost),
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+                    var d = Delegate.CreateDelegate(ev.EventHandlerType, this, mi, throwOnBindFailure: false);
+                    if (d == null) return;   // delegate signature mismatch on this build -> skip
+                    ev.AddEventHandler(null, d);   // static event
+                    _deviceLostDelegate = d;
+                    _deviceLostHooked = true;
+                    return;
+                }
+            }
+            catch { _deviceLostHooked = false; }
+        }
+
+        private void TryUnhookDeviceLost()
+        {
+            try
+            {
+                if (_deviceLostDelegate == null) return;
+                foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (a.GetName().Name != "VirindiViewService") continue;
+                    var t = a.GetType("VirindiViewService.Service");
+                    var ev = t != null ? t.GetEvent("DeviceLost") : null;
+                    if (ev != null) ev.RemoveEventHandler(null, _deviceLostDelegate);
+                    break;
+                }
+            }
+            catch { }
+            finally { _deviceLostDelegate = null; _deviceLostHooked = false; }
+        }
+
+        private void Service_DeviceLost(object sender, EventArgs e)
+        {
+            _deviceLostCount++;   // count only; never do work in a device-loss callback
+        }
+
+        // ---------------------------------------------------------------- main-window resizing
+        //
+        // v1.2.4: the main window is user-resizable (vertically is the point: long search results).
+        // VVS makes NOTHING resize automatically -- a FixedLayout child keeps its parsed rect
+        // forever (research file 14) -- so we watch the window's client size at ~5 Hz and re-flow
+        // the notebook + lists through IControl.LayoutPosition (backed by HudFixedLayout.
+        // SetControlRect; a no-op on the Decal backend, which is fine). All dimensions are derived
+        // from the CURRENT client area with the design's margins (270x360 view -> nb (0,22,270,316),
+        // lists 248 wide), so the math needs no calibration against what ClientArea "means" on a
+        // given VVS build. VVS persists the user's chosen size itself (vvs.s3db UserW/UserH), so a
+        // taller window comes back tall next session and the first poll re-flows to match.
+        private int _layoutW = int.MinValue, _layoutH = int.MinValue;
+        private readonly System.Collections.Generic.HashSet<string> _layoutApplied =
+            new System.Collections.Generic.HashSet<string>();
+
+        /// <summary>Turn on the VVS resize handle for the main window. Idempotent; reflection-safe.</summary>
+        private void EnableMainWindowResize()
+        {
+            try
+            {
+                var view = MVWireupHelper.GetDefaultView(this);
+                var up = view != null ? view.GetType().GetProperty("Underlying") : null;
+                object hud = up != null ? up.GetValue(view, null) : null;
+                if (hud == null) return;
+                var p = hud.GetType().GetProperty("UserResizeable");
+                if (p != null && p.CanWrite) p.SetValue(hud, true, null);
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Re-flow the notebook and lists to the window's current client size. Cheap when nothing
+        /// changed (one reflection read + a size compare). Controls on unrealized tabs resolve
+        /// null and are retried on later ticks until every control is laid out for this size.
+        /// </summary>
+        private void ApplyMainWindowLayout()
+        {
+            try
+            {
+                var view = MVWireupHelper.GetDefaultView(this);
+                var up = view != null ? view.GetType().GetProperty("Underlying") : null;
+                object hud = up != null ? up.GetValue(view, null) : null;
+                var ca = hud != null ? hud.GetType().GetProperty("ClientArea") : null;
+                if (ca == null) return;
+                var size = (System.Drawing.Size)ca.GetValue(hud, null);
+                if (size.Width < 200 || size.Height < 170) return;   // absurd/transitional sizes
+
+                if (size.Width != _layoutW || size.Height != _layoutH)
+                {
+                    _layoutW = size.Width; _layoutH = size.Height;
+                    _layoutApplied.Clear();
+                }
+                if (_layoutApplied.Count >= 5) return;   // fully laid out at this size
+
+                // Everything hangs off the notebook rect, which hangs off the client area with the
+                // design margins (22px above for the coord readout, ~22px below).
+                int nbW = _layoutW;
+                int nbH = Math.Max(120, _layoutH - 44);
+
+                int listW = Math.Max(80, nbW - 22);
+
+                ApplyRect("nbPages", 0, 22, nbW, nbH);
+
+                // Column widths do NOT re-flow when a HudList is resized -- VVS fixes them at
+                // parse time, and the "trailing column absorbs the remainder" rule (file 14 sec 9)
+                // applies only at creation. Field evidence: a widened list kept its original
+                // ~60px coords column, clipped ("13.4N, 0"). So after (re)sizing each list we
+                // redistribute explicitly: coords get a fixed 92px (worst case "144.0S, 102.3W"
+                // fits), the NAME column absorbs the rest. On the Route list the step text is the
+                // flexible one. This also fixes the stock-width clipping the old 150/leftover
+                // split caused.
+                if (ApplyRect("lstResults", 5, 30, listW, Math.Max(40, nbH - 71)))
+                    ApplyListColumns("lstResults", listW, 1, new[] { 24, 0, 92 });
+                if (ApplyRect("lstProxResults", 5, 30, listW, Math.Max(40, nbH - 71)))
+                    ApplyListColumns("lstProxResults", listW, 1, new[] { 24, 0, 92 });
+                if (ApplyRect("lstRouteResults", 5, 75, listW, Math.Max(40, nbH - 116)))
+                    ApplyListColumns("lstRouteResults", listW, 2, new[] { 24, 60, 0 });
+                ApplyRect("txtNotes", 5, 113, Math.Max(80, nbW - 30), Math.Max(20, nbH - 166));
+            }
+            catch { }
+        }
+
+        private bool ApplyRect(string name, int x, int y, int w, int h)
+        {
+            if (_layoutApplied.Contains(name)) return false;
+            try
+            {
+                var view = MVWireupHelper.GetDefaultView(this);
+                IControl c = view != null ? view[name] : null;   // throws/null on unrealized tab
+                if (c == null) return false;
+                c.LayoutPosition = new System.Drawing.Rectangle(x, y, w, h);
+                _layoutApplied.Add(name);
+                return true;
+            }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// Redistribute a list's column widths for its new overall width, via the underlying
+        /// HudList.SetColumnWidth(col, width) (confirmed in the reflected VVS surface; invoked
+        /// reflectively so the Decal backend and older VVS builds degrade to a no-op). fixedW
+        /// holds per-column fixed widths; flexCol absorbs width minus scrollbar, fixed columns,
+        /// and padding.
+        /// </summary>
+        private void ApplyListColumns(string name, int listW, int flexCol, int[] fixedW)
+        {
+            try
+            {
+                var view = MVWireupHelper.GetDefaultView(this);
+                IControl c = view != null ? view[name] : null;
+                if (c == null) return;
+                var up = c.GetType().GetProperty("Underlying");
+                object hud = up != null ? up.GetValue(c, null) : null;
+                var set = hud != null ? hud.GetType().GetMethod("SetColumnWidth", new[] { typeof(int), typeof(int) }) : null;
+                if (set == null) return;
+
+                int scroll = 14;
+                try
+                {
+                    var sp = hud.GetType().GetProperty("ScrollBarWidth");
+                    if (sp != null) scroll = Convert.ToInt32(sp.GetValue(hud, null));
+                }
+                catch { }
+
+                int used = 0;
+                for (int i = 0; i < fixedW.Length; i++) if (i != flexCol) used += fixedW[i];
+                int flex = Math.Max(60, listW - scroll - used - 6);
+
+                for (int i = 0; i < fixedW.Length; i++)
+                {
+                    int w = (i == flexCol) ? flex : fixedW[i];
+                    if (w > 0) set.Invoke(hud, new object[] { i, w });
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>Concrete theme types in the loaded VVS assembly (same base as the current theme).</summary>
+        private static System.Collections.Generic.List<Type> ThemeTypes(object currentTheme)
+        {
+            var found = new System.Collections.Generic.List<Type>();
+            try
+            {
+                Type[] types;
+                var asm = currentTheme.GetType().Assembly;
+                try { types = asm.GetTypes(); }
+                catch (ReflectionTypeLoadException rex) { types = rex.Types; }   // partial load is fine
+                foreach (var t in types)
+                {
+                    if (t == null || t.IsAbstract) continue;
+                    if (t.Namespace != currentTheme.GetType().Namespace) continue;
+                    if (t.GetConstructor(Type.EmptyTypes) == null) continue;     // must be creatable
+                    found.Add(t);
+                }
+            }
+            catch { }
+            return found;
+        }
+
+        private static string[] ListThemeTypeNames(object currentTheme)
+        {
+            var names = new System.Collections.Generic.List<string>();
+            foreach (var t in ThemeTypes(currentTheme)) names.Add(t.Name);
+            return names.ToArray();
+        }
+
+        private static Type FindThemeType(object currentTheme, string fragment)
+        {
+            foreach (var t in ThemeTypes(currentTheme))
+                if (t.Name.IndexOf(fragment, StringComparison.OrdinalIgnoreCase) >= 0) return t;
+            return null;
         }
 
         /// <summary>
@@ -843,6 +1083,10 @@ namespace Magellan.Plugin
 
                 PollCheckboxes();
 
+                // Re-flow the notebook/lists if the user resized the main window (v1.2.4). Cheap
+                // no-op when the size hasn't changed and everything is already laid out.
+                ApplyMainWindowLayout();
+
                 // Update the always-on coordinate readout every tick, regardless of map state. On the
                 // surface: overland coords, or a live "Distance to <selected place>" tracker when
                 // RelCoords is on (the original Magellan 2 behaviour). Indoors: there are no
@@ -1096,6 +1340,65 @@ namespace Magellan.Plugin
                 {
                     RunDiagnostics();
                 }
+                else if (arg.StartsWith("theme", StringComparison.OrdinalIgnoreCase))
+                {
+                    // The stale-GPU-resource fix-test. On the affected machine, theme element
+                    // textures (and the glyph atlas) are dead while freshly-created textures work
+                    // -- so assigning a NEW theme instance, which VVS must build fresh textures
+                    // for, should bring the window back without a client restart:
+                    //   /mag theme          -> report current theme + list available theme types
+                    //   /mag theme reload   -> new instance of the CURRENT theme type (same look)
+                    //   /mag theme <name>   -> switch to a different theme by (partial) type name
+                    // Everything reflective and guarded: theme type shapes vary by VVS build, and
+                    // an experiment command must never be the thing that crashes the client.
+                    string want = arg.Length > 5 ? arg.Substring(5).Trim() : "";
+                    try
+                    {
+                        var view = MVWireupHelper.GetDefaultView(this);
+                        var up = view != null ? view.GetType().GetProperty("Underlying") : null;
+                        object hud = up != null ? up.GetValue(view, null) : null;
+                        var tp = hud != null ? hud.GetType().GetProperty("Theme") : null;
+                        object cur = tp != null ? tp.GetValue(hud, null) : null;
+                        if (tp == null || cur == null)
+                        {
+                            Chat("theme: not readable on this backend/build.");
+                        }
+                        else if (!tp.CanWrite)
+                        {
+                            Chat("theme: " + cur.GetType().Name + " (read-only on this VVS build -- switch via the title-bar icon menu instead).");
+                        }
+                        else if (want.Length == 0)
+                        {
+                            Chat("theme: " + cur.GetType().FullName + ". Use /mag theme reload, or /mag theme <name> with one of:");
+                            Chat("  " + string.Join(", ", ListThemeTypeNames(cur)));
+                        }
+                        else if (want.Equals("reload", StringComparison.OrdinalIgnoreCase))
+                        {
+                            object fresh = Activator.CreateInstance(cur.GetType());
+                            tp.SetValue(hud, fresh, null);
+                            Chat("theme: reloaded " + cur.GetType().Name + " (fresh instance -- forces new element textures). Did the window body come back?");
+                        }
+                        else
+                        {
+                            Type match = FindThemeType(cur, want);
+                            if (match == null)
+                            {
+                                Chat("theme: no theme type matching '" + want + "'. Available: " + string.Join(", ", ListThemeTypeNames(cur)));
+                            }
+                            else
+                            {
+                                object inst = Activator.CreateInstance(match);
+                                tp.SetValue(hud, inst, null);
+                                Chat("theme: switched to " + match.Name + ".");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var inner = ex.InnerException ?? ex;
+                        Chat("theme: failed (" + inner.GetType().Name + ": " + inner.Message + ")");
+                    }
+                }
                 else if (arg.Equals("reset", StringComparison.OrdinalIgnoreCase))
                 {
                     // Restore both windows to a known-visible state: on-screen position, un-ghosted,
@@ -1134,7 +1437,7 @@ namespace Magellan.Plugin
                 }
                 else
                 {
-                    Chat("Magellan: /mag map (toggle dungeon map)  /mag phase (verify DAT read)  /mag diag (status)  /mag reset (restore window positions/visibility). Use the Magellan window for search.");
+                    Chat("Magellan: /mag map (toggle dungeon map)  /mag phase (verify DAT read)  /mag diag (status)  /mag reset (restore windows)  /mag theme [reload|<name>] (rebuild/switch window theme). Use the Magellan window for search.");
                 }
             }
             catch (Exception ex) { Fail("CommandLineText", ex); }
@@ -1536,6 +1839,12 @@ namespace Magellan.Plugin
                 // in the probe itself is reported, not thrown.
                 try { Chat("  texture self-test: " + Magellan.Plugin.Ui.VvsMapOverlay.TextureSelfTest()); }
                 catch (Exception ex) { Chat("  texture self-test: PROBE FAILED (" + ex.GetType().Name + ": " + ex.Message + ")"); }
+                // Device losses invalidate cached GPU resources (theme element textures, glyph
+                // atlas). NOTE: the healthy baseline is NOT zero -- a healthy machine logged 1 in
+                // a normal session with intact rendering (losses happen; a healthy stack recovers).
+                // The signal is CORRELATION: rendering that degrades when this count ticks up, or
+                // counts far above a healthy session's. Then: /mag theme reload.
+                Chat("  d3d device losses this session: " + (_deviceLostHooked ? _deviceLostCount.ToString() : "(hook unavailable)"));
                 if (_dependencyError != null)
                     Chat("  MISSING DEPENDENCY: " + _dependencyError);
 #else

@@ -82,3 +82,17 @@ that is the D3D *texture-loading* layer failing while text/line drawing works
   2. Re-run the Virindi Bundle installer (refreshes VVS and its theme assets --
      services do NOT auto-update).
   3. If a wrapper (dgVoodoo etc.) or overlay software is in use, test without.
+
+If OTHER VVS plugin windows also render oddly (tight/bunched/overlapping text,
+missing panel bodies) the machine's VVS environment is degraded -- users often
+assume this is normal; it isn't. In order:
+  1. Check Windows display scaling. If not 100%, set the AC client exe ->
+     Properties -> Compatibility -> "Change high DPI settings" -> Override high
+     DPI scaling behavior: Application. Relaunch.
+  2. Run the client windowed (fullscreen alt-tab causes D3D device resets that
+     VVS caches may not survive; /mag diag counts them, /mag theme reload
+     rebuilds them).
+  3. Reinstall VVS properly: re-run the Virindi Bundle installer. NEVER just
+     delete the VVS folder -- Decal refuses to load if a registered service
+     fails to start. To fully remove first, use Virindi's VVS_Clean tool to
+     deregister, then delete, then reinstall.
