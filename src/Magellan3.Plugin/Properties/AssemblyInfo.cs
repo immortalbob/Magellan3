@@ -12,5 +12,5 @@ using System.Runtime.InteropServices;
 // INCLUDING this version, so bumping it forces every user to re-register. Release identity lives
 // in AssemblyFileVersion / the version constant in PluginCore instead.
 [assembly: AssemblyVersion("3.0.0.0")]
-[assembly: AssemblyFileVersion("1.2.4.0")]
-[assembly: AssemblyInformationalVersion("1.2.4")]
+[assembly: AssemblyFileVersion("1.2.5.0")]
+[assembly: AssemblyInformationalVersion("1.2.5")]

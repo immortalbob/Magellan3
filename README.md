@@ -16,13 +16,18 @@ from a CDN that no longer exists. Magellan **generates** its map from `client_ce
 runtime, so it works offline and maps custom ACE-server dungeons nobody has ever drawn. That is the
 differentiator; nostalgia is not.
 
-## What's new in v1.2.4
+## What's new in v1.2.5
 
 - **The main window is resizable** -- drag the corner; taller is the point (long search/route
   result lists). VVS sizes nothing automatically, so the plugin re-flows the notebook and all
   three lists to the new client size (~5 Hz poll, no-op when unchanged), keeping the design's
   margins. Your chosen size persists across sessions (VVS stores it in vvs.s3db); `/mag reset`
   returns the window to the stock 270x360.
+- **List icons are the ORIGINAL 2003 icons again.** The type->icon mapping was recovered by
+  disassembling magellan2.dll from the original beta MSI (a 7-case jump table): Lifestone
+  0x06001355, Town 0x060012D3, Shop 0x0600100F, Interest/unknown 0x06001058, and
+  Portal/Random Portal/Dungeon 0x0600106B. The previous ids were near-miss guesses that mostly
+  don't exist in portal.dat -- the pink missing-image boxes in the result lists.
 - **List columns re-flow too, and coordinates are never clipped.** VVS fixes column widths at
   parse time (a resized list kept its original narrow coords column), so on every list resize the
   plugin redistributes widths via `HudList.SetColumnWidth`: the coords column is pinned at 92px

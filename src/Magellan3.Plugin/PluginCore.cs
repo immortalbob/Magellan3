@@ -194,7 +194,7 @@ namespace Magellan.Plugin
         /// "am I actually running the new DLL?" tell from research file 12 sec 6 (a stale locked
         /// DLL is a classic time sink).
         /// </summary>
-        public const string PluginVersion = "1.2.4";
+        public const string PluginVersion = "1.2.5";
 
         private bool _startupOk;
         private bool _bannerShown;
@@ -1880,19 +1880,31 @@ namespace Magellan.Plugin
             // here beyond what the handlers already set. Present for symmetry / future controls.
         }
 
-        /// <summary>Maps a place TYPE to a portal.dat icon id. Placeholder ids -- tune to taste.</summary>
+        /// <summary>
+        /// Maps a place TYPE to a portal.dat icon id -- THE ORIGINAL 2003 MAPPING, recovered from
+        /// magellan2.dll (m2beta2.2.0.0.msi): the type parser at .text+0x57d1 assigns the enum
+        /// (Lifestone=0, RandomPortal=1, Dungeon=2, Portal=3, Interest=4/default, Town=5, Shop=6)
+        /// and the icon switch at .text+0x50f0 returns, per enum:
+        ///   Lifestone -> 0x06001355 · Town -> 0x060012D3 · Shop -> 0x0600100F
+        ///   Interest  -> 0x06001058 · Portal/Random Portal/Dungeon/default -> 0x0600106B
+        /// The pre-1.2.4 ids here were misremembered variants (e.g. 0x0600106A vs 106B) and mostly
+        /// don't exist in portal.dat -- rendering as VVS's pink missing-image box.
+        /// </summary>
         private static int IconFor(string type)
         {
             switch (type)
             {
-                case "Lifestone": return 0x0600106A;
-                case "Portal":
-                case "Random Portal": return 0x06001238;
+                case "Lifestone": return 0x06001355;
                 case "Town":
-                case "Community": return 0x060011F8;
-                case "Shop": return 0x06001320;
-                case "Dungeon": return 0x060026E4;
-                default: return 0x06001336;
+                case "Community": return 0x060012D3;   // Community: post-2003 type, town-style icon
+                case "Shop": return 0x0600100F;
+                case "Portal":
+                case "Random Portal":
+                case "Dungeon": return 0x0600106B;
+                // In the original, any UNRECOGNIZED type string fell into the Interest bucket
+                // (enum 4, displayed "Point of interest", icon 0x06001058) -- so Interest,
+                // Wandering NPC, and future types all take that icon, faithfully.
+                default: return 0x06001058;
             }
         }
 
