@@ -16,6 +16,30 @@ from a CDN that no longer exists. Magellan **generates** its map from `client_ce
 runtime, so it works offline and maps custom ACE-server dungeons nobody has ever drawn. That is the
 differentiator; nostalgia is not.
 
+## What's new in v1.2.2
+
+Follow-up from the first v1.2.1 field diag, which cleared the backend/wireup/ghost/alpha layers on
+the affected machine and taught us two things:
+
+- **The invisible-window warning no longer fires on `ClickThrough`.** Cross-checking two machines'
+  diags against a live `vvs.s3db` proved the runtime `HudView.ClickThrough` property reads True on
+  healthy, un-pinned windows whose persisted `StoredViewInfo.ClickThrough` is 0 -- it does not
+  mirror the user's click-through toggle, so flagging it was a false positive. It is still
+  *reported*, just not alarmed on; the authoritative flag lives only in vvs.s3db.
+- **`/mag diag` now reports the main window's active THEME** (reflected from the underlying view).
+  With backend, wireup, ghost, and alpha all verified good, the per-window theme -- persisted
+  per-machine in vvs.s3db (`ThemeID2`/`IsCustomTheme`) and capable of rendering control bodies
+  blank while hover states still draw (cf. the tracker's `ghostytabs` theme knob) -- is the leading
+  remaining suspect for "controls only visible under the mouse".
+- **`/mag diag` runs a texture-pipeline self-test** (DxTexture create -> Fill -> ACImage from
+  portal.dat, each step isolated). Screenshots from the affected machine showed the true
+  fingerprint: text and line drawing fine (tabs, coords, the whole dungeon map) while every
+  image-backed element was missing -- window background, buttons, edit/list bodies, and the
+  magenta missing-texture box where the title-bar icon belongs. That is the D3DX/texture-load
+  layer, not core D3D: the usual fix is installing the legacy DirectX End-User Runtime (June 2010)
+  and re-running the Virindi Bundle installer, and the self-test names the first broken step in
+  one chat line.
+
 ## What's new in v1.2.1
 
 A diagnostics-and-visibility release, driven by one field report: "the dungeon map draws but the

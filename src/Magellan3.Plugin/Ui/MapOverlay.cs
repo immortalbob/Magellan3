@@ -92,6 +92,80 @@ namespace Magellan.Plugin.Ui
 
         public VvsMapOverlay(AutomapRenderer renderer) { _renderer = renderer; }
 
+        /// <summary>
+        /// One-shot probe of the D3D texture pipeline, for /mag diag. Field case (v1.2.1 beta): a
+        /// machine rendered all TEXT and LINES fine -- tab labels, coord readout, the whole line-
+        /// drawn dungeon map -- while every IMAGE-BACKED element was missing: window background,
+        /// button faces, edit/list bodies, and the title-bar icon showed the magenta missing-
+        /// texture box. That is a failure of the texture-load path (the Managed-DX / D3DX layer),
+        /// not of D3D itself, and this probe makes it a one-line chat paste instead of a
+        /// screenshot-comparison session. Each step is isolated so the report names the first
+        /// broken layer: DxTexture create -> render-pass Fill -> ACImage from portal.dat.
+        /// </summary>
+        public static string TextureSelfTest()
+        {
+            var sb = new System.Text.StringBuilder();
+            try
+            {
+                var t = new DxTexture(new Size(8, 8));
+                sb.Append("DxTexture=OK");
+                try
+                {
+                    t.BeginRender();
+                    try
+                    {
+                        t.Fill(new Rectangle(0, 0, 8, 8), Color.FromArgb(255, 0, 128, 0));
+                        sb.Append("; Fill=OK");
+
+                        // THE load-bearing step. Fill/DrawLine exercise only primitive drawing;
+                        // the broken machine's failure is loading IMAGES into textures, which
+                        // happens lazily at draw time. Drawing a portal-dat image into the test
+                        // texture exercises exactly that path. Reflection: the DrawPortalImage
+                        // overload set varies by VVS build, and a diagnostic must not be the
+                        // thing that fails to compile.
+                        try
+                        {
+                            var mi = typeof(DxTexture).GetMethod("DrawPortalImage",
+                                new[] { typeof(int), typeof(Rectangle) });
+                            if (mi != null)
+                            {
+                                mi.Invoke(t, new object[] { 9310, new Rectangle(0, 0, 8, 8) });
+                                sb.Append("; DrawPortalImage=OK");
+                            }
+                            else sb.Append("; DrawPortalImage=n/a (no (int,Rectangle) overload)");
+                        }
+                        catch (Exception ex)
+                        {
+                            var inner = ex.InnerException ?? ex;   // unwrap TargetInvocationException
+                            sb.Append("; DrawPortalImage=FAIL(" + inner.GetType().Name + ": " + inner.Message + ")");
+                        }
+                    }
+                    finally { t.EndRender(); }
+                }
+                catch (Exception ex) { sb.Append("; Fill=FAIL(" + ex.GetType().Name + ": " + ex.Message + ")"); }
+            }
+            catch (Exception ex) { sb.Append("DxTexture=FAIL(" + ex.GetType().Name + ": " + ex.Message + ")"); }
+            try
+            {
+                // Constructor alone can false-pass (ACImage caches its BMP texture lazily, at
+                // draw time) -- so also force the cached-texture generation if the method exists.
+                var img = new ACImage(9310);   // the main window's own portal-dat icon
+                sb.Append("; ACImage(9310)=" + (img != null ? "OK" : "null"));
+                try
+                {
+                    var gen = typeof(ACImage).GetMethod("GenerateCachedBMPTexture", System.Type.EmptyTypes);
+                    if (gen != null) { gen.Invoke(img, null); sb.Append("; GenCachedTex=OK"); }
+                }
+                catch (Exception ex)
+                {
+                    var inner = ex.InnerException ?? ex;
+                    sb.Append("; GenCachedTex=FAIL(" + inner.GetType().Name + ": " + inner.Message + ")");
+                }
+            }
+            catch (Exception ex) { sb.Append("; ACImage=FAIL(" + ex.GetType().Name + ": " + ex.Message + ")"); }
+            return sb.ToString();
+        }
+
         public void CreateView()
         {
             // Build the view entirely in code. (An earlier attempt used VVS's Decal3XMLParser, but

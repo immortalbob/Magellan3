@@ -70,3 +70,15 @@ WITH AC CLOSED, either fix the flags:
 or delete the rows for factory-fresh windows:
     DELETE FROM StoredViewInfo WHERE ViewKey LIKE 'Magellan3:%';
 This touches only Magellan's windows; other plugins keep their layouts.
+
+If the window frame/text draws but BUTTONS, EDIT BOXES, LISTS, and the WINDOW
+BACKGROUND are missing (world visible through the window body; a pink/magenta
+box instead of the title-bar icon; controls flash into view under the mouse):
+that is the D3D *texture-loading* layer failing while text/line drawing works
+-- the dungeon map still draws because it is pure lines and text. Run
+/mag diag and read the "texture self-test" line; then:
+  1. Install the legacy "DirectX End-User Runtime (June 2010)" redistributable
+     (provides the d3dx9_* components this era of plugins loads textures with).
+  2. Re-run the Virindi Bundle installer (refreshes VVS and its theme assets --
+     services do NOT auto-update).
+  3. If a wrapper (dgVoodoo etc.) or overlay software is in use, test without.

@@ -189,7 +189,7 @@ namespace Magellan.Plugin
         /// "am I actually running the new DLL?" tell from research file 12 sec 6 (a stale locked
         /// DLL is a classic time sink).
         /// </summary>
-        public const string PluginVersion = "1.2.1";
+        public const string PluginVersion = "1.2.2";
 
         private bool _startupOk;
         private bool _bannerShown;
@@ -531,18 +531,57 @@ namespace Magellan.Plugin
                 try { var p = hud.GetType().GetProperty("ClickThrough"); if (p != null) clickThrough = p.GetValue(hud, null); } catch { }
 
                 bool g = (ghosted is bool) && (bool)ghosted;
-                bool ct = (clickThrough is bool) && (bool)clickThrough;
                 int aVal = -1;
                 try { if (alpha != null) aVal = Convert.ToInt32(alpha); } catch { }
-                // Pinned ("hudified": no border/title bar), click-through (no mouse input), or
-                // faded-to-invisible all read to the user as a dead or missing window -- and none
-                // can be fixed by mouse alone without knowing the left-ctrl tricks (virindi.net
-                // wiki, "Customize Your View"). Flag any of them.
-                suspicious = g || ct || (aVal >= 0 && aVal < 60);
+                // Flag pinned ("hudified") or faded-to-invisible states -- both read to the user as
+                // a dead window and can't be fixed by mouse alone (left-ctrl tricks; virindi.net
+                // wiki, "Customize Your View").
+                //
+                // ClickThrough is reported but deliberately NOT flagged: field data from two
+                // machines (v1.2.1 beta) showed the live HudView.ClickThrough property reading TRUE
+                // on healthy, un-pinned, fully-working windows whose own vvs.s3db rows carry
+                // ClickThrough=0 -- the live property does not mirror the persisted per-window
+                // toggle, so alarming on it is a false positive. The persisted flag lives only in
+                // vvs.s3db (StoredViewInfo.ClickThrough); check it there, client closed.
+                suspicious = g || (aVal >= 0 && aVal < 60);
 
                 return "ghosted=" + (ghosted != null ? ghosted.ToString() : "?")
                      + ", clickthrough=" + (clickThrough != null ? clickThrough.ToString() : "?")
                      + ", alpha=" + (alpha != null ? alpha.ToString() : "?");
+            }
+            catch (Exception ex) { return "probe failed: " + ex.Message; }
+        }
+
+        /// <summary>
+        /// Best-effort read of the main window's active THEME via reflection over Underlying.
+        /// The per-window theme is the machine-local rendering variable v1.2.1's diag couldn't see:
+        /// a broken/custom theme (vvs.s3db ThemeID2/IsCustomTheme) renders control bodies blank
+        /// while hover states still draw -- on a window whose backend, wireup, ghost and alpha all
+        /// check out. Property names vary by VVS build, so probe a candidate list and report
+        /// whatever exists.
+        /// </summary>
+        private string ProbeViewTheme()
+        {
+            try
+            {
+                var view = MVWireupHelper.GetDefaultView(this);
+                var up = view != null ? view.GetType().GetProperty("Underlying") : null;
+                object hud = up != null ? up.GetValue(view, null) : null;
+                if (hud == null) return "n/a";
+                var sb = new System.Text.StringBuilder();
+                foreach (var name in new[] { "Theme", "ThemeName", "CurrentTheme", "ThemeID", "DrawStyle" })
+                {
+                    try
+                    {
+                        var p = hud.GetType().GetProperty(name);
+                        if (p == null) continue;
+                        object v = p.GetValue(hud, null);
+                        if (sb.Length > 0) sb.Append(", ");
+                        sb.Append(name).Append("=").Append(v == null ? "null" : v.ToString());
+                    }
+                    catch { }
+                }
+                return sb.Length > 0 ? sb.ToString() : "no theme properties found";
             }
             catch (Exception ex) { return "probe failed: " + ex.Message; }
         }
@@ -1491,6 +1530,12 @@ namespace Magellan.Plugin
                 Chat("  fileservice errors=" + Magellan.Plugin.Mapping.DecalDatSource.ErrorCount
                      + (Magellan.Plugin.Mapping.DecalDatSource.LastError.Length > 0 ? " (" + Magellan.Plugin.Mapping.DecalDatSource.LastError + ")" : "")
                      + "; frame handler errors=" + _frameErrors);
+                // Texture-pipeline probe: discriminates "text/lines draw but image-backed UI is
+                // missing" (a D3DX/texture-load failure -- legacy DirectX runtime territory) from a
+                // theme or plugin problem, in one pasteable line. Wrapped so a JIT/type-load error
+                // in the probe itself is reported, not thrown.
+                try { Chat("  texture self-test: " + Magellan.Plugin.Ui.VvsMapOverlay.TextureSelfTest()); }
+                catch (Exception ex) { Chat("  texture self-test: PROBE FAILED (" + ex.GetType().Name + ": " + ex.Message + ")"); }
                 if (_dependencyError != null)
                     Chat("  MISSING DEPENDENCY: " + _dependencyError);
 #else
@@ -1503,6 +1548,7 @@ namespace Magellan.Plugin
                     Chat("main window backend: " + _viewBackend + "; presentation: " + MainWindowPresentation(out bad)
                          + (bad ? "  <-- effectively invisible; /mag reset" : ""));
                     Chat("vvs: startup saw " + _vvsStateAtStartup + "; now " + ProbeVvsState());
+                    Chat("main window theme: " + ProbeViewTheme());
                     // The exact keys of our rows in VVS's persistence db (vvs.s3db, StoredViewInfo,
                     // in the VVS install folder). Keyed "<AssemblyName>:<title at view creation>";
                     // support can inspect/heal/delete these rows with the CLIENT CLOSED. A missing
